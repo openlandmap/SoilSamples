@@ -57,6 +57,7 @@ library(openair)
 #load.pigz("soilchem.RData")
 #load("soilchem.RData")
 source('./R/data_functions.R')
+drv = "/data/Soil_points/"
 ```
 
 - Metadata information: ["Soil Survey Investigation Report No. 42."](https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1253872.pdf) and ["Soil Survey Investigation Report No. 45."](https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/nrcs142p2_052226.pdf),
@@ -115,30 +116,30 @@ This data set is continuously updated.
 
 ```{r}
 if(!exists("chemsprops.NCSS")){
-  #nccs.xy = terra::vect("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/ncss_labdata_locations.gpkg")
+  #nccs.xy = terra::vect(paste0(drv, "INT/USDA_NCSS/ncss_labdata_locations.gpkg"))
   #ncss.site <- dplyr::bind_cols(as.data.frame(nccs.xy), geom(nccs.xy))
-  ncss.site <- vroom::vroom("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/ncss_labdata_locations.csv.gz")
+  ncss.site <- vroom::vroom(paste0(drv, "INT/USDA_NCSS/ncss_labdata_locations.csv.gz"))
   ## Rows: 67367 Columns: 88
   #plot(ncss.site[,c("longitude_decimal_degrees","latitude_decimal_degrees")])
-  ncss.chem <- vroom::vroom("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/NCSS_lab_chemical_properties.csv.gz")
+  ncss.chem <- vroom::vroom(paste0(drv, "INT/USDA_NCSS/NCSS_lab_chemical_properties.csv.gz"))
   ## Rows: 325740 Columns: 210
   summary(as.factor(ncss.chem$total_carbon_ncs_method))
   #summary(ncss.chem$organic_carbon_walkley_black)
   #summary(!is.na(ncss.chem$organic_carbon_walkley_black))
   ## 213,940 samples with SOC
-  ncss.phys <- vroom::vroom("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/NCSS_lab_physical_properties.csv.gz")
+  ncss.phys <- vroom::vroom(paste0(drv, "INT/USDA_NCSS/NCSS_lab_physical_properties.csv.gz"))
   ## Rows: 406281 Columns: 123
-  ncss.layer <- vroom::vroom("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/NCSS_lab_layer.csv.gz")
+  ncss.layer <- vroom::vroom(paste0(drv, "INT/USDA_NCSS/NCSS_lab_layer.csv.gz"))
   ## Rows: 417656 Columns: 24
   ## Quality-controlled data prepared by NRCS:
   # 'oc_wbc_final' = final Walkley Black SOC estimate that still needs to be scaled to dry combustion. This harmonizes across all reasonable organic carbon data sources in the NCSS DB
   # 'bd_od_pred'  = a final oven dry bulk density estimate
   # 'total_frags_pct_nopf' = volumetric rock content from NASIS
   oc.nm = c("labsampnum.x", "layer_key", "longitude_decimal_degrees", "latitude_decimal_degrees", "site_obsdate") ## "hzn_top", "hzn_bot", "hzn_desgn"
-  oc_db_layers = read.table("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/tmp/oc_db_layers.txt.gz", sep = "\t", fill = TRUE, header = TRUE)[,c("labsampnum.x", "layer_key", "oc_wbc_final", "bd_od_pred")]
+  oc_db_layers = read.table(paste0(drv, "INT/USDA_NCSS/tmp/oc_db_layers.txt.gz"), sep = "\t", fill = TRUE, header = TRUE)[,c("labsampnum.x", "layer_key", "oc_wbc_final", "bd_od_pred")]
   #summary(!is.na(oc_db_layers$oc_wbc_final))
-  oc_db_rk_layers = read.table("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/tmp/oc_db_rk_layers.txt.gz", sep = "\t", fill = TRUE, header = TRUE)[,c("labsampnum.x", "layer_key", "oc_wbc_final", "bd_od_pred", "total_frags_pct_nopf")]
-  oc_layers = read.table("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/tmp/oc_layers.txt.gz", sep = "\t", fill = TRUE, header = TRUE)[,c(oc.nm, "oc_wbc_final")]
+  oc_db_rk_layers = read.table(paste0(drv, "INT/USDA_NCSS/tmp/oc_db_rk_layers.txt.gz"), sep = "\t", fill = TRUE, header = TRUE)[,c("labsampnum.x", "layer_key", "oc_wbc_final", "bd_od_pred", "total_frags_pct_nopf")]
+  oc_layers = read.table(paste0(drv, "INT/USDA_NCSS/tmp/oc_layers.txt.gz"), sep = "\t", fill = TRUE, header = TRUE)[,c(oc.nm, "oc_wbc_final")]
   #summary(duplicated(oc_layers$labsampnum.x))
   #summary(!is.na(oc_layers$longitude_decimal_degrees))
   ## 41240 without coordinates
@@ -181,6 +182,7 @@ if(!exists("chemsprops.NCSS")){
   ncss.horizons$total_frag_wt_pct_gt_2_mm_ws = ifelse(is.na(ncss.horizons$total_frag_wt_pct_gt_2_mm_ws), as.numeric(ncss.horizons$total_frags_pct_nopf), ifelse(as.numeric(ncss.horizons$total_frag_wt_pct_gt_2_mm_ws) > 99, NA, as.numeric(ncss.horizons$total_frag_wt_pct_gt_2_mm_ws)))
   #summary(ncss.horizons$total_frag_wt_pct_gt_2_mm_ws)
   ncss.horizons$oc_d = signif( ncss.horizons$organic_carbon / 1000 * ncss.horizons$bulk_density_oven_dry * 1000 * (100 - ifelse(is.na(ncss.horizons$total_frag_wt_pct_gt_2_mm_ws), 0, ncss.horizons$total_frag_wt_pct_gt_2_mm_ws))/100, 3)
+  #ggplot(ncss.horizons, aes(oc_d+1)) + geom_histogram() + scale_x_log10()
   ncss.horizons$ca_ext = signif(ncss.horizons$ca_nh4_ph_7 * 200, 4)
   ncss.horizons$mg_ext = signif(ncss.horizons$mg_nh4_ph_7 * 121, 3)
   ncss.horizons$na_ext = signif(ncss.horizons$na_nh4_ph_7 * 230, 3)
@@ -208,7 +210,7 @@ if(!exists("chemsprops.NCSS")){
   #summary(chemsprops.NCSS$organic_carbon)
   ## mean = 21.7; median = 5.5
   chemsprops.NCSS = chemsprops.NCSS[,col.names]
-  saveRDS.gz(chemsprops.NCSS, "/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/chemsprops.NCSS.rds")
+  saveRDS.gz(chemsprops.NCSS, paste0(drv, "INT/USDA_NCSS/chemsprops.NCSS.rds"))
 }
 dim(chemsprops.NCSS)
 ## [1] 346203     39
@@ -227,9 +229,9 @@ mineralogical data for soils of the conterminous United States](http://pubs.usgs
 
 ```{r}
 if(!exists("chemsprops.USGS.NGS")){
-  ngs.points <- read.csv("/mnt/diskstation/data/Soil_points/USA/geochemical/ds-801-csv/site.txt", sep=",")
+  ngs.points <- read.csv(paste0(drv, "USA/geochemical/ds-801-csv/site.txt"), sep=",")
   ## 4857 pnts
-  ngs.layers <- lapply(c("top5cm.txt", "ahorizon.txt", "chorizon.txt"), function(i){read.csv(paste0("/mnt/diskstation/data/Soil_points/USA/geochemical/ds-801-csv/", i), sep=",")})
+  ngs.layers <- lapply(c("top5cm.txt", "ahorizon.txt", "chorizon.txt"), function(i){read.csv(paste0(drv, "USA/geochemical/ds-801-csv/", i), sep=",")})
   ngs.layers = plyr::rbind.fill(ngs.layers)
   #dim(ngs.layers)
   # 14571  126
@@ -263,7 +265,7 @@ if(!exists("chemsprops.USGS.NGS")){
   chemsprops.USGS.NGS$citation_url = "https://pubs.usgs.gov/ds/801/"
   chemsprops.USGS.NGS = complete.vars(chemsprops.USGS.NGS, sel = c("tot_clay_pct", "organic_carbon"), coords = c("longitude", "latitude"))
   #summary(chemsprops.USGS.NGS$organic_carbon)
-  saveRDS.gz(chemsprops.USGS.NGS, "/mnt/diskstation/data/Soil_points/USA/geochemical/ds-801-csv/chemsprops.USGS.NGS.rds")
+  saveRDS.gz(chemsprops.USGS.NGS, paste0(drv, "USA/geochemical/ds-801-csv/chemsprops.USGS.NGS.rds"))
 }
 dim(chemsprops.USGS.NGS)
 ## [1] 9447   39
@@ -277,8 +279,8 @@ dim(chemsprops.USGS.NGS)
 ```{r}
 if(!exists("chemsprops.AfSPDB")){
   library(foreign)
-  afspdb.profiles <- read.dbf("/mnt/diskstation/data/Soil_points/AF/AfSIS_SPDB/AfSP012Qry_Profiles.dbf", as.is=TRUE)
-  afspdb.layers <- read.dbf("/mnt/diskstation/data/Soil_points/AF/AfSIS_SPDB/AfSP012Qry_Layers.dbf", as.is=TRUE)
+  afspdb.profiles <- read.dbf(paste0(drv, "AF/AfSIS_SPDB/AfSP012Qry_Profiles.dbf"), as.is=TRUE)
+  afspdb.layers <- read.dbf(paste0(drv, "AF/AfSIS_SPDB/AfSP012Qry_Layers.dbf"), as.is=TRUE)
   afspdb.s.lst <- c("ProfileID", "FldMnl_ID", "T_Year", "X_LonDD", "Y_LatDD")
   #summary(afspdb.layers$BlkDens)
   ## add missing columns
@@ -307,7 +309,7 @@ if(!exists("chemsprops.AfSPDB")){
   chemsprops.AfSPDB$project_url = "https://www.isric.org/projects/africa-soil-profiles-database-afsp"
   chemsprops.AfSPDB$citation_url = "https://www.isric.org/sites/default/files/isric_report_2014_01.pdf"
   chemsprops.AfSPDB = complete.vars(chemsprops.AfSPDB, sel = c("LabTxtr","OrgC","Clay","Ecec","PHH2O","EC","k_ext"), coords = c("X_LonDD", "Y_LatDD"))
-  saveRDS.gz(chemsprops.AfSPDB, "/mnt/diskstation/data/Soil_points/AF/AfSIS_SPDB/chemsprops.AfSPDB.rds")
+  saveRDS.gz(chemsprops.AfSPDB, paste0(drv, "AF/AfSIS_SPDB/chemsprops.AfSPDB.rds"))
 }
 dim(chemsprops.AfSPDB)
 ## [1] 68833    39
@@ -320,14 +322,14 @@ dim(chemsprops.AfSPDB)
 
 ```{r}
 if(!exists("chemsprops.AfSIS1")){
-  afsis1.xy = read.csv("/mnt/diskstation/data/Soil_points/AF/AfSIS_SSL/2009-2013/Georeferences/georeferences.csv")
+  afsis1.xy = read.csv(paste0(drv, "AF/AfSIS_SSL/2009-2013/Georeferences/georeferences.csv"))
   afsis1.xy$Sampling.date = 2011
-  afsis1.lst = list.files("/mnt/diskstation/data/Soil_points/AF/AfSIS_SSL/2009-2013/Wet_Chemistry", pattern=glob2rx("*.csv$"), full.names = TRUE, recursive = TRUE)
+  afsis1.lst = list.files(paste0(drv, "AF/AfSIS_SSL/2009-2013/Wet_Chemistry"), pattern=glob2rx("*.csv$"), full.names = TRUE, recursive = TRUE)
   afsis1.hor = plyr::rbind.fill(lapply(afsis1.lst, read.csv))
-  tansis.xy = read.csv("/mnt/diskstation/data/Soil_points/AF/AfSIS_SSL/tansis/Georeferences/georeferences.csv")
+  tansis.xy = read.csv(paste0(drv, "AF/AfSIS_SSL/tansis/Georeferences/georeferences.csv"))
   #summary(tansis.xy$Sampling.date)
   tansis.xy$Sampling.date = 2018
-  tansis.lst = list.files("/mnt/diskstation/data/Soil_points/AF/AfSIS_SSL/tansis/Wet_Chemistry", pattern=glob2rx("*.csv$"), full.names = TRUE, recursive = TRUE)
+  tansis.lst = list.files(paste0(drv, "AF/AfSIS_SSL/tansis/Wet_Chemistry"), pattern=glob2rx("*.csv$"), full.names = TRUE, recursive = TRUE)
   tansis.hor = plyr::rbind.fill(lapply(tansis.lst, read.csv))
   afsis1t.df = plyr::rbind.fill(list(plyr::join(afsis1.hor, afsis1.xy, by="SSN"), plyr::join(tansis.hor, tansis.xy, by="SSN")))
   afsis1t.df$UpDpth = ifelse(afsis1t.df$Depth=="sub", 20, 0)
@@ -351,7 +353,7 @@ if(!exists("chemsprops.AfSIS1")){
   chemsprops.AfSIS1$project_url = "https://registry.opendata.aws/afsis/"
   chemsprops.AfSIS1$citation_url = "https://doi.org/10.1016/j.geodrs.2015.06.002"
   chemsprops.AfSIS1 = complete.vars(chemsprops.AfSIS1, sel = c("Psa.w4clay","oc","ph_h2o","M3.K"), coords = c("Longitude", "Latitude"))
-  saveRDS.gz(chemsprops.AfSIS1, "/mnt/diskstation/data/Soil_points/AF/AfSIS_SSL/chemsprops.AfSIS1.rds")
+  saveRDS.gz(chemsprops.AfSIS1, paste0(drv, "AF/AfSIS_SSL/chemsprops.AfSIS1.rds"))
 }
 dim(chemsprops.AfSIS1)
 ## [1] 4369   39
@@ -365,7 +367,7 @@ Note: Year of sampling is not specified, hence of limited use for spatiotemporal
 
 ```{r}
 if(!exists("chemsprops.isda")){
-  isda.xy = read.csv("/mnt/diskstation/data/Soil_points/AF/ISDA/iSDA_soil_data.csv")
+  isda.xy = read.csv(paste0(drv, "AF/ISDA/iSDA_soil_data.csv"))
   #summary(as.Date(isda.xy$end_date, format="%d/%m/%Y"))
   #summary(as.factor(isda.xy$source))
   #library("ggplot2")
@@ -398,7 +400,7 @@ if(!exists("chemsprops.isda")){
   chemsprops.isda$project_url = "https://www.isda-africa.com/"
   chemsprops.isda$citation_url = "https://doi.org/10.17605/OSF.IO/A69R5"
   chemsprops.isda = complete.vars(chemsprops.isda, sel = c("carbon_organic","ph"), coords = c("longitude", "latitude"))
-  saveRDS.gz(chemsprops.isda, "/mnt/diskstation/data/Soil_points/AF/ISDA/chemsprops.isda.rds")
+  saveRDS.gz(chemsprops.isda, paste0(drv, "AF/ISDA/chemsprops.isda.rds"))
 }
 dim(chemsprops.isda)
 ## [1] 49225    39
@@ -411,10 +413,10 @@ dim(chemsprops.isda)
 ```{r}
 if(!exists("chemsprops.FRED")){
   Sys.setenv("VROOM_CONNECTION_SIZE" = 131072 * 2)
-  fred = vroom::vroom("/mnt/diskstation/data/Soil_points/INT/FRED/FRED3_Entire_Database_2021.csv", skip = 10, col_names=FALSE)
+  fred = vroom::vroom(paste0(drv, "INT/FRED/FRED3_Entire_Database_2021.csv"), skip = 10, col_names=FALSE)
   ## 57,190 x 1,164
-  #nm.fred = read.csv("/mnt/diskstation/data/Soil_points/INT/FRED/FRED3_Column_Definitions_20210423-091040.csv", header=TRUE)
-  nm.fred0 = read.csv("/mnt/diskstation/data/Soil_points/INT/FRED/FRED3_Entire_Database_2021.csv", nrows=2)
+  #nm.fred = read.csv(paste0(drv, "INT/FRED/FRED3_Column_Definitions_20210423-091040.csv"), header=TRUE)
+  nm.fred0 = read.csv(paste0(drv, "INT/FRED/FRED3_Entire_Database_2021.csv"), nrows=2)
   names(fred) = make.names(t(nm.fred0)[,1])
   ## 1164 columns!
   #summary(fred$Soil.organic.C.content)
@@ -444,7 +446,7 @@ if(!exists("chemsprops.FRED")){
   chemsprops.FRED$citation_url = "https://doi.org/10.25581/ornlsfa.014/1459186"
   chemsprops.FRED = complete.vars(chemsprops.FRED, sel = c("Soil.organic.C.content", "Soil.texture_Fraction.clay", "Soil.pH_Water"))
   ## many duplicates
-  saveRDS.gz(chemsprops.FRED, "/mnt/diskstation/data/Soil_points/INT/FRED/chemsprops.FRED.rds")  
+  saveRDS.gz(chemsprops.FRED, paste0(drv, "INT/FRED/chemsprops.FRED.rds"))  
 }
 dim(chemsprops.FRED)
 ## [1] 14537  39
@@ -457,7 +459,7 @@ dim(chemsprops.FRED)
 ```{r}
 if(!exists("chemsprops.GROOT")){
   #Sys.setenv("VROOM_CONNECTION_SIZE" = 131072 * 2)
-  GROOT = read.csv("/mnt/diskstation/data/Soil_points/INT/GRooT/GRooTFullVersion.csv")
+  GROOT = read.csv(paste0(drv, "INT/GRooT/GRooTFullVersion.csv"))
   ## 114,222 x 73
   #summary(GROOT$soilCarbon)
   #summary(!is.na(GROOT$soilCarbon))
@@ -478,7 +480,7 @@ if(!exists("chemsprops.GROOT")){
   chemsprops.GROOT$project_url = "https://groot-database.github.io/GRooT/"
   chemsprops.GROOT$citation_url = "https://dx.doi.org/10.1111/geb.13179"
   chemsprops.GROOT = complete.vars(chemsprops.GROOT, sel = c("soilCarbon", "soilpH"), coords = c("decimalLongitud", "decimalLatitude"))
-  saveRDS.gz(chemsprops.GROOT, "/mnt/diskstation/data/Soil_points/INT/GRooT/chemsprops.GROOT.rds")
+  saveRDS.gz(chemsprops.GROOT, paste0(drv, "INT/GRooT/chemsprops.GROOT.rds"))
 }
 dim(chemsprops.GROOT)
 ## [1] 16271  39
@@ -490,7 +492,7 @@ dim(chemsprops.GROOT)
 
 ```{r}
 if(!exists("chemsprops.SRDB")){
-  srdb = read.csv("/mnt/diskstation/data/Soil_points/INT/SRDB/srdb-data.csv")
+  srdb = read.csv(paste0(drv, "INT/SRDB/srdb-data.csv"))
   ## 10366 x 85
   srdb.h.lst = c("Site_ID", "Notes", "Study_midyear", "Longitude", "Latitude",  "SSL_classification_name", "labsampnum", "layer_key", "layer_sequence", "hzn_top", "hzn_bot", "hzn_desgn", "tex_psd", "texture_lab", "Soil_clay", "Soil_silt", "Soil_sand", "oc", "oc_d", "c_tot", "n_tot", "ph_kcl", "ph_h2o", "ph_cacl2", "cec_sum", "cec_nh4", "ecec", "wpg2", "Soil_BD", "ca_ext", "mg_ext", "na_ext", "k_ext", "ec_satp", "ec_12pre", "source_db", "confidence_degree")
   #summary(srdb$Study_midyear)
@@ -512,7 +514,7 @@ if(!exists("chemsprops.SRDB")){
   chemsprops.SRDB$project_url = "https://github.com/bpbond/srdb/"
   chemsprops.SRDB$citation_url = "https://doi.org/10.5194/bg-7-1915-2010"
   chemsprops.SRDB = complete.vars(chemsprops.SRDB, sel = c("oc", "Soil_clay", "Soil_BD"), coords = c("Longitude", "Latitude"))
-  saveRDS.gz(chemsprops.SRDB, "/mnt/diskstation/data/Soil_points/INT/SRDB/chemsprops.SRDB.rds")
+  saveRDS.gz(chemsprops.SRDB, paste0(drv, "INT/SRDB/chemsprops.SRDB.rds"))
 }
 dim(chemsprops.SRDB)
 ## [1] 3337   39
@@ -525,7 +527,7 @@ dim(chemsprops.SRDB)
 
 ```{r}
 if(!exists("chemsprops.SoDaH")){
-  sodah.hor = vroom::vroom("/mnt/diskstation/data/Soil_points/INT/SoDaH/521_soils_data_harmonization_6e8416fa0c9a2c2872f21ba208e6a919.csv.gz")
+  sodah.hor = vroom::vroom(paste0(drv, "INT/SoDaH/521_soils_data_harmonization_6e8416fa0c9a2c2872f21ba208e6a919.csv.gz"))
   #head(sodah.hor)
   #summary(sodah.hor$coarse_frac)
   #summary(sodah.hor$lyr_soc)
@@ -550,7 +552,7 @@ if(!exists("chemsprops.SoDaH")){
   chemsprops.SoDaH$project_url = "https://lter.github.io/som-website"
   chemsprops.SoDaH$citation_url = "https://doi.org/10.5194/essd-2020-195"
   chemsprops.SoDaH = complete.vars(chemsprops.SoDaH, sel = c("oc", "clay", "ph_h2o"), coords = c("long", "lat"))
-  saveRDS.gz(chemsprops.SoDaH, "/mnt/diskstation/data/Soil_points/INT/SoDaH/chemsprops.SoDaH.rds")
+  saveRDS.gz(chemsprops.SoDaH, paste0(drv, "INT/SoDaH/chemsprops.SoDaH.rds"))
 }
 dim(chemsprops.SoDaH)
 ## [1] 55760    39
@@ -563,14 +565,20 @@ dim(chemsprops.SoDaH)
 
 ```{r}
 if(!exists("chemsprops.WISE")){
-  wise.site <- read.csv("/mnt/diskstation/data/Soil_points/INT/ISRIC_WISE/WISE3_SITE.csv", stringsAsFactors = FALSE)
+  wise.site <- read.csv(paste0(drv, "INT/ISRIC_WISE/WISE3_SITE.csv"), stringsAsFactors = FALSE)
   #fao.90.lst = lapply(levels(as.factor(wise.site$FAO_90)), function(i){sumcor(wise.site, "FAO_90", "USCL", i)})
   #fao.90.uscl = do.call(rbind, fao.90.lst)
-  #write.csv(fao.90.uscl, "/mnt/diskstation/data/Soil_points/INT/ISRIC_WISE/correlation_FAO.90_USCL.csv")
-  wise.s.lst <- c("WISE3_id", "PITREF", "DATEYR", "LONDD", "LATDD", "USCL")
+  #write.csv(fao.90.uscl, paste0(drv, "INT/ISRIC_WISE/correlation_FAO.90_USCL.csv"))
+  ## TH: a very approximate correlation FAO90 -> USDA ST to help decrease global gaps
+  st.cor = read.csv('./correlation/soil_type_correlation_ISRIC_WISE.csv')
+  wise.site$tmp = paste0( dplyr::left_join(wise.site["FAO_90"], st.cor, multiple = "first")$Class_1, " / ",
+                       dplyr::left_join(wise.site["FAO_90"], st.cor, multiple = "first")$Class_2)           
+  wise.site$SSL_classification_name = ifelse(is.na(wise.site$USCL)|wise.site$USCL=="", paste(wise.site$tmp), paste(wise.site$USCL))
+  #summary(as.factor(wise.site$SSL_classification_name))
+  wise.s.lst <- c("WISE3_id", "PITREF", "DATEYR", "LONDD", "LATDD", "SSL_classification_name")
   wise.site$LONDD = as.numeric(wise.site$LONDD)
   wise.site$LATDD = as.numeric(wise.site$LATDD)
-  wise.layer <- read.csv("/mnt/diskstation/data/Soil_points/INT/ISRIC_WISE/WISE3_HORIZON.csv", stringsAsFactors = FALSE)
+  wise.layer <- read.csv(paste0(drv, "INT/ISRIC_WISE/WISE3_HORIZON.csv"), stringsAsFactors = FALSE)
   wise.layer$ca_ext = signif(wise.layer$EXCA * 200, 4)
   wise.layer$mg_ext = signif(wise.layer$EXMG * 121, 3)
   wise.layer$na_ext = signif(wise.layer$EXNA * 230, 3)
@@ -585,7 +593,7 @@ if(!exists("chemsprops.WISE")){
   chemsprops.WISE$project_url = "http://dx.doi.org/10.1111/j.1475-2743.2009.00202.x"  
   chemsprops.WISE$citation_url = "http://dx.doi.org/10.1111/j.1475-2743.2009.00202.x"
   chemsprops.WISE = complete.vars(chemsprops.WISE, sel = c("ORGC","CLAY","PHH2O","CECSOIL","k_ext"), coords = c("LONDD", "LATDD"))
-  saveRDS.gz(chemsprops.WISE, "/mnt/diskstation/data/Soil_points/INT/ISRIC_WISE/chemsprops.WISE.rds")
+  saveRDS.gz(chemsprops.WISE, paste0(drv, "INT/ISRIC_WISE/chemsprops.WISE.rds"))
 }
 dim(chemsprops.WISE)
 ## [1] 37443    39
@@ -598,7 +606,7 @@ dim(chemsprops.WISE)
 
 ```{r}
 if(!exists("chemsprops.ISCN")){
-  path.iscn = "/mnt/diskstation/data/Soil_points/INT/ISCNData/"
+  path.iscn = paste0(drv, "INT/ISCNData/")
   iscn.hor <- dplyr::left_join(vroom::vroom(paste0(path.iscn, "ISCN3_layer.csv.gz"), delim=";", col_types = strrep('c', times = 95)), vroom::vroom(paste0(path.iscn, "ISCN3_profile.csv.gz"), delim=";", col_types = strrep('c', times = 44)), by=c("site_name","profile_name"), multiple = "first")
   ## Rows: 445829 Columns: 95
   #summary(as.factor(iscn.hor$dataset_name_sub.x))
@@ -628,11 +636,12 @@ if(!exists("chemsprops.ISCN")){
     iscn.hor[sel,"longitude_decimal_degrees"] = terra::geom(xy.t)[,"x"]
     iscn.hor[sel,"latitude_decimal_degrees"] = terra::geom(xy.t)[,"y"]
   }
-  #plot(iscn.hor[,c("longitude_decimal_degrees","latitude_decimal_degrees")], pch="+")
   iscn.hor$SSL_classification_name <- ifelse(is.na(iscn.hor$soil_taxon.x), paste(iscn.hor$soil_series.x), paste(iscn.hor$soil_taxon.x))
   #summary(as.factor(iscn.hor$SSL_classification_name))
   ## Strange Date format - https://github.com/ISCN/SOCDRaHR2/blob/master/R/ISCN3_3.R
   iscn.hor$site_obsdate <- lubridate::as_date(as.numeric(iscn.hor$`observation_date (YYYY-MM-DD).x`), origin = lubridate::ymd('1899-12-31'))
+  yr.sel = which(nchar(iscn.hor$`observation_date (YYYY-MM-DD).x`)==4)
+  iscn.hor$site_obsdate[yr.sel] = lubridate::as_date(paste0(iscn.hor$`observation_date (YYYY-MM-DD).x`[yr.sel], "-06-01"))
   #summary(iscn.hor$site_obsdate)
   #summary(as.factor(iscn.hor$c_method))
   ## some 5+ methods, mainly Dry combustion
@@ -661,7 +670,8 @@ if(!exists("chemsprops.ISCN")){
   chemsprops.ISCN$project_url = "http://iscn.fluxdata.org/"  
   chemsprops.ISCN$citation_url = "https://doi.org/10.6073/pasta/cc751923c5576b95a6d6a227d5afe8ba"
   chemsprops.ISCN = complete.vars(chemsprops.ISCN, sel = c("organic_carbon", "oc_d", "ph_h2o", "clay_tot_psa (percent)", "SSL_classification_name"))
-  saveRDS.gz(chemsprops.ISCN, "/mnt/diskstation/data/Soil_points/INT/ISCNData/chemsprops.ISCN.rds")
+  saveRDS.gz(chemsprops.ISCN, paste0(drv, "INT/ISCNData/chemsprops.ISCN.rds"))
+  plot(chemsprops.ISCN[,c("longitude_decimal_degrees","latitude_decimal_degrees")], pch="+")
 }
 dim(chemsprops.ISCN)
 ## 35650    39
@@ -674,7 +684,7 @@ dim(chemsprops.ISCN)
 
 ```{r}
 if(!exists("chemsprops.GEMAS")){
-  gemas.samples <- read.csv("/mnt/diskstation/data/Soil_points/EU/GEMAS/GEMAS.csv", stringsAsFactors = FALSE)
+  gemas.samples <- read.csv(paste0(drv, "EU/GEMAS/GEMAS.csv"), stringsAsFactors = FALSE)
   ## GEMAS, agricultural soil, 0-20 cm, air dried, <2 mm, aqua regia Data from ACME, total C, TOC, CEC, ph_CaCl2
   gemas.samples$hzn_top = 0
   gemas.samples$hzn_bot = 20
@@ -691,7 +701,7 @@ if(!exists("chemsprops.GEMAS")){
   chemsprops.GEMAS$project_url = "http://gemas.geolba.ac.at/"
   chemsprops.GEMAS$citation_url = "https://doi.org/10.1016/j.apgeochem.2017.01.021"
   chemsprops.GEMAS = complete.vars(chemsprops.GEMAS, sel = c("oc","clay","pH_CaCl2"), coords = c("XCOO", "YCOO"))
-  saveRDS.gz(chemsprops.GEMAS, "/mnt/diskstation/data/Soil_points/EU/GEMAS/chemsprops.GEMAS.rds")
+  saveRDS.gz(chemsprops.GEMAS, paste0(drv, "EU/GEMAS/chemsprops.GEMAS.rds"))
 }
 dim(chemsprops.GEMAS)
 ## [1] 4131   39
@@ -703,17 +713,17 @@ dim(chemsprops.GEMAS)
 
 ```{r}
 if(!exists("chemsprops.LUCAS")){
-  lucas.samples <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/EU/LUCAS/LUCAS_TOPSOIL_v1.xlsx", sheet = 1)
+  lucas.samples <- openxlsx::read.xlsx(paste0(drv, "EU/LUCAS/LUCAS_TOPSOIL_v1.xlsx"), sheet = 1)
   lucas.samples$site_obsdate <- "2009"
   #summary(lucas.samples$N)
-  lucas.ro <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/EU/LUCAS/Romania.xlsx", sheet = 1)
+  lucas.ro <- openxlsx::read.xlsx(paste0(drv, "EU/LUCAS/Romania.xlsx"), sheet = 1)
   lucas.ro$site_obsdate <- "2012"
   names(lucas.samples)[which(!names(lucas.samples) %in% names(lucas.ro))]
   lucas.ro = plyr::rename(lucas.ro, replace=c("Soil.ID"="sample_ID", "GPS_X_LONG"="GPS_LONG", "GPS_Y_LAT"="GPS_LAT", "pHinH2O"="pH_in_H2O", "pHinCaCl2"="pH_in_CaCl"))
-  lucas.bu <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/EU/LUCAS/Bulgaria.xlsx", sheet = 1)
+  lucas.bu <- openxlsx::read.xlsx(paste0(drv, "EU/LUCAS/Bulgaria.xlsx"), sheet = 1)
   lucas.bu$site_obsdate <- "2012"
   names(lucas.samples)[which(!names(lucas.samples) %in% names(lucas.bu))]
-  #lucas.ch <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/EU/LUCAS/LUCAS_2015_Topsoil_data_of_Switzerland-with-coordinates.xlsx_.xlsx", sheet = 1, startRow = 2)
+  #lucas.ch <- openxlsx::read.xlsx(paste0(drv, "EU/LUCAS/LUCAS_2015_Topsoil_data_of_Switzerland-with-coordinates.xlsx_.xlsx"), sheet = 1, startRow = 2)
   #lucas.ch = plyr::rename(lucas.ch, replace=c("Soil_ID"="sample_ID", "GPS_.LAT"="GPS_LAT", "pH.in.H2O"="pH_in_H2O", "pH.in.CaCl2"="pH_in_CaCl", "Calcium.carbonate/.g.kg–1"="CaCO3", "Silt/.g.kg–1"="silt", "Sand/.g.kg–1"="sand", "Clay/.g.kg–1"="clay", "Organic.carbon/.g.kg–1"="OC"))
   ## Double readings?
   lucas.t = plyr::rbind.fill(list(lucas.samples, lucas.ro, lucas.bu))
@@ -729,7 +739,7 @@ if(!exists("chemsprops.LUCAS")){
   chemsprops.LUCAS$project_url = "https://esdac.jrc.ec.europa.eu/"
   chemsprops.LUCAS$citation_url = "https://doi.org/10.1111/ejss.12499"
   chemsprops.LUCAS = complete.vars(chemsprops.LUCAS, sel = c("OC","clay","pH_in_H2O"), coords = c("GPS_LONG", "GPS_LAT"))
-  saveRDS.gz(chemsprops.LUCAS, "/mnt/diskstation/data/Soil_points/EU/LUCAS/chemsprops.LUCAS.rds")
+  saveRDS.gz(chemsprops.LUCAS, paste0(drv, "EU/LUCAS/chemsprops.LUCAS.rds"))
 }
 dim(chemsprops.LUCAS)
 ## [1] 21272    39
@@ -737,8 +747,8 @@ dim(chemsprops.LUCAS)
 
 ```{r}
 if(!exists("chemsprops.LUCAS2")){
-  #lucas2015.samples <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/EU/LUCAS/LUCAS_Topsoil_2015_20200323.xlsx", sheet = 1)
-  lucas2015.v = terra::vect("/mnt/diskstation/data/Soil_points/EU/LUCAS/LUCAS_Topsoil_2015_20200323.shp")
+  #lucas2015.samples <- openxlsx::read.xlsx(paste0(drv, "EU/LUCAS/LUCAS_Topsoil_2015_20200323.xlsx"), sheet = 1)
+  lucas2015.v = terra::vect(paste0(drv, "EU/LUCAS/LUCAS_Topsoil_2015_20200323.shp"))
   #head(as.data.frame(lucas2015.xy))
   lucas2015.xy = dplyr::bind_cols(as.data.frame(lucas2015.v), geom(lucas2015.v))
   ## https://www.aqion.de/site/130
@@ -756,7 +766,7 @@ if(!exists("chemsprops.LUCAS2")){
   chemsprops.LUCAS2$project_url = "https://esdac.jrc.ec.europa.eu/"
   chemsprops.LUCAS2$citation_url = "https://doi.org/10.1111/ejss.12499"
   chemsprops.LUCAS2 = complete.vars(chemsprops.LUCAS2, sel = c("OC","Clay","pH_H20"), coords = c("x", "y"))
-  saveRDS.gz(chemsprops.LUCAS2, "/mnt/diskstation/data/Soil_points/EU/LUCAS/chemsprops.LUCAS2.rds")
+  saveRDS.gz(chemsprops.LUCAS2, paste0(drv, "EU/LUCAS/chemsprops.LUCAS2.rds"))
 }
 dim(chemsprops.LUCAS2)
 ## [1] 21859    39
@@ -764,9 +774,9 @@ dim(chemsprops.LUCAS2)
 
 ```{r}
 if(!exists("chemsprops.LUCAS3")){
-  lucas2018.xy <- readxl::read_excel("/mnt/diskstation/data/Soil_points/EU/LUCAS/LUCAS-SOIL-2018.xls", sheet = 1)
+  lucas2018.xy <- readxl::read_excel(paste0(drv, "EU/LUCAS/LUCAS-SOIL-2018.xls"), sheet = 1)
   rem.LOD = function(x){ as.numeric(ifelse(x=="< LOD", 0, as.numeric(x)))}
-  lucas2018.bd = read.csv("/mnt/diskstation/data/Soil_points/EU/LUCAS/BulkDensity_2018_final-2.csv")
+  lucas2018.bd = read.csv(paste0(drv, "EU/LUCAS/BulkDensity_2018_final-2.csv"))
   lucas2018.xy$BD = dplyr::left_join(lucas2018.xy, lucas2018.bd, join_by(POINTID == POINT_ID))$BD.0.20
   lucas2018.xy$BD = ifelse(lucas2018.xy$BD < 0.04 | lucas2018.xy$BD > 2.4, NA, lucas2018.xy$BD)
   ## 1 mS/m = 100 mS/cm | 1 dS/m = 1 mS/cm = 1 mS/m / 100
@@ -790,7 +800,7 @@ if(!exists("chemsprops.LUCAS3")){
   chemsprops.LUCAS3$project_url = "https://esdac.jrc.ec.europa.eu/"
   chemsprops.LUCAS3$citation_url = "https://doi.org/10.1111/ejss.12499"
   chemsprops.LUCAS3 = complete.vars(chemsprops.LUCAS3, sel = c("OC","pH_H20","BD"), coords = c("TH_LONG", "TH_LAT"))
-  saveRDS.gz(chemsprops.LUCAS3, "/mnt/diskstation/data/Soil_points/EU/LUCAS/chemsprops.LUCAS3.rds")
+  saveRDS.gz(chemsprops.LUCAS3, paste0(drv, "EU/LUCAS/chemsprops.LUCAS3.rds"))
 }
 dim(chemsprops.LUCAS3)
 ## [1] 18982    39
@@ -803,9 +813,9 @@ dim(chemsprops.LUCAS3)
 
 ```{r}
 if(!exists("chemsprops.Mangroves")){
-  mng.profs <- read.csv("/mnt/diskstation/data/Soil_points/INT/TNC_mangroves/mangrove_soc_database_v10_sites.csv", skip=1)
-  mng.hors <- read.csv("/mnt/diskstation/data/Soil_points/INT/TNC_mangroves/mangrove_soc_database_v10_horizons.csv", skip=1)
-  mng.2022 = read.csv("/mnt/diskstation/data/Soil_points/INT/TNC_mangroves/mangrove_C_2022_update.csv")
+  mng.profs <- read.csv(paste0(drv, "INT/TNC_mangroves/mangrove_soc_database_v10_sites.csv"), skip=1)
+  mng.hors <- read.csv(paste0(drv, "INT/TNC_mangroves/mangrove_soc_database_v10_horizons.csv"), skip=1)
+  mng.2022 = read.csv(paste0(drv, "INT/TNC_mangroves/mangrove_C_2022_update.csv"))
   mng.2022$CD_calc = mng.2022$OC /100 * as.numeric(mng.2022$BD_reported)
   mng.2022.f = plyr::rename(mng.2022, replace = list("Year_collected"="Year_sampled", "Longitude"="Longitude_Adjusted", "Latitude"="Latitude_Adjusted", "BD_reported"="BD_final", "OC"="OC_final"))
   mngALL = plyr::join(mng.hors, mng.profs, by=c("Site.name"))
@@ -828,7 +838,7 @@ if(!exists("chemsprops.Mangroves")){
   chemsprops.Mangroves = complete.vars(chemsprops.Mangroves, sel = c("oc","BD_reported"), coords = c("Longitude_Adjusted", "Latitude_Adjusted"))
   #head(chemsprops.Mangroves)
   mng.rm = chemsprops.Mangroves$Site.name[chemsprops.Mangroves$Site.name %in% mngALL$Site.name[grep("N", mngALL$OK.to.release., ignore.case = FALSE)]]
-  saveRDS.gz(chemsprops.Mangroves, "/mnt/diskstation/data/Soil_points/INT/TNC_mangroves/chemsprops.Mangroves.rds")
+  saveRDS.gz(chemsprops.Mangroves, paste0(drv, "INT/TNC_mangroves/chemsprops.Mangroves.rds"))
 }
 dim(chemsprops.Mangroves)
 ## [1] 7987   39
@@ -842,19 +852,23 @@ Peatland soil measurements (points) from the literature described in:
 
 ```{r}
 if(!exists("chemsprops.Peatlands")){
-  cif.hors <- read.csv("/mnt/diskstation/data/Soil_points/INT/CIFOR_peatlands/SOC_literature_CIFOR_v1.csv")
-  #summary(cif.hors$BD..g.cm..)
-  #summary(cif.hors$SOC)
-  #summary(cif.hors$TOC.content....)
+  cif.hors <- read.csv(paste0(drv, "INT/CIFOR_peatlands/SOC_literature_CIFOR_v1.csv"), na.strings = c("","#N/A"))
+  #summary(as.numeric(cif.hors$BD..g.cm..))
+  #summary(as.numeric(cif.hors$SOC))
+  #summary(as.numeric(cif.hors$TOC.content....))
   #summary(!is.na(cif.hors$modelling.x))
-  cif.hors$oc = cif.hors$SOC * 10
+  cif.hors$modelling.x = as.numeric(cif.hors$modelling.x)
+  cif.hors$modelling.y = as.numeric(cif.hors$modelling.y)
+  cif.hors$Upper = as.numeric(cif.hors$Upper)
+  cif.hors$Lower = as.numeric(cif.hors$Lower)
+  cif.hors$oc = as.numeric(cif.hors$SOC) * 10
+  cif.hors$bulk_density_oven_dry = as.numeric(cif.hors$BD..g.cm..)
   cif.hors$wpg2 = 0
-  cif.hors$c_tot = cif.hors$TOC.content.... * 10
-  cif.hors$oc_d = cif.hors$C.density..kg.C.m..
+  cif.hors$c_tot = as.numeric(cif.hors$TOC.content....) * 10
+  cif.hors$oc_d = as.numeric(cif.hors$C.density..kg.C.m..)
   cif.hors$site_obsdate = as.integer(substr(cif.hors$year, 1, 4))-1
-  cif.hors$SSL_classification_name = ifelse(cif.hors$TAXNUSDA=="", paste(cif.hors$TAXOUSDA), paste(cif.hors$TAXNUSDA))
   #summary(as.factor(cif.hors$SSL_classification_name))
-  cif.col = c("SOURCEID", "usiteid", "site_obsdate", "modelling.x", "modelling.y", "SSL_classification_name", "labsampnum", "layer_key", "layer_sequence", "Upper", "Lower", "hzn_desgn", "tex_psda", "texture_lab", "clay_tot_psa", "silt_tot_psa", "sand_tot_psa", "oc", "oc_d", "c_tot", "n_tot", "ph_kcl", "ph_h2o", "ph_cacl2", "cec_sum", "cec_nh4", "ecec", "wpg2", "BD..g.cm..", "ca_ext", "mg_ext", "na_ext", "k_ext", "ec_satp", "ec_12pre")
+  cif.col = c("SOURCEID", "usiteid", "site_obsdate", "modelling.x", "modelling.y", "SSL_classification_name", "labsampnum", "layer_key", "layer_sequence", "Upper", "Lower", "hzn_desgn", "tex_psda", "texture_lab", "clay_tot_psa", "silt_tot_psa", "sand_tot_psa", "oc", "oc_d", "c_tot", "n_tot", "ph_kcl", "ph_h2o", "ph_cacl2", "cec_sum", "cec_nh4", "ecec", "wpg2", "bulk_density_oven_dry", "ca_ext", "mg_ext", "na_ext", "k_ext", "ec_satp", "ec_12pre")
   x.na = cif.col[which(!cif.col %in% names(cif.hors))]
   if(length(x.na)>0){ for(i in x.na){ cif.hors[,i] = NA } }
   chemsprops.Peatlands = cif.hors[,cif.col]
@@ -862,8 +876,8 @@ if(!exists("chemsprops.Peatlands")){
   chemsprops.Peatlands$confidence_degree = 4
   chemsprops.Peatlands$project_url = "https://www.cifor.org/"
   chemsprops.Peatlands$citation_url = "https://doi.org/10.17528/cifor/006452"
-  chemsprops.Peatlands = complete.vars(chemsprops.Peatlands, sel = c("oc", "BD..g.cm..", "SSL_classification_name", "c_tot"), coords = c("modelling.x", "modelling.y"))
-  saveRDS.gz(chemsprops.Peatlands, "/mnt/diskstation/data/Soil_points/INT/CIFOR_peatlands/chemsprops.Peatlands.rds")
+  chemsprops.Peatlands = complete.vars(chemsprops.Peatlands, sel = c("oc", "bulk_density_oven_dry", "SSL_classification_name", "c_tot"), coords = c("modelling.x", "modelling.y"))
+  saveRDS.gz(chemsprops.Peatlands, paste0(drv, "INT/CIFOR_peatlands/chemsprops.Peatlands.rds"))
 }
 dim(chemsprops.Peatlands)
 ## [1] 2968  39
@@ -881,8 +895,8 @@ knitr::include_graphics("img/landpksmap_sites.jpg")
 ```{r}
 if(!exists("chemsprops.LandPKS")){
   pks = plyr::rbind.fill(
-            vroom::vroom("/mnt/diskstation/data/Soil_points/INT/LandPKS/Export_LandInfo_Data_1.csv"), 
-            vroom::vroom("/mnt/diskstation/data/Soil_points/INT/LandPKS/Export_LandInfo_Data_2.csv"))
+            vroom::vroom(paste0(drv, "INT/LandPKS/Export_LandInfo_Data_1.csv")), 
+            vroom::vroom(paste0(drv, "INT/LandPKS/Export_LandInfo_Data_2.csv")))
   #str(pks)
   ## 55483 obs. of  52 variables
   #summary(as.factor(pks$BedrockDepth))
@@ -944,7 +958,7 @@ if(!exists("chemsprops.LandPKS")){
   chemsprops.LandPKS$citation_url = "https://doi.org/10.2489/jswc.68.1.5A"
   chemsprops.LandPKS = complete.vars(chemsprops.LandPKS, sel = c("clay_tot_psa","wpg2"), coords = c("longitude_decimal_degrees", "latitude_decimal_degrees"))
   #plot(chemsprops.LandPKS[,c("longitude_decimal_degrees","latitude_decimal_degrees")], pch="+")
-  saveRDS.gz(chemsprops.LandPKS, "/mnt/diskstation/data/Soil_points/INT/LandPKS/chemsprops.LandPKS.rds")
+  saveRDS.gz(chemsprops.LandPKS, paste0(drv, "INT/LandPKS/chemsprops.LandPKS.rds"))
 }
 dim(chemsprops.LandPKS)
 ## [1] 165044    39
@@ -959,7 +973,7 @@ Note: these are only historic data and it is not clear if the locations are synt
 
 ```{r}
 if(!exists("chemsprops.EGRPR")){
-  russ.HOR = read.csv("/mnt/diskstation/data/Soil_points/Russia/EGRPR/Russia_EGRPR_soil_pedons.csv")
+  russ.HOR = read.csv(paste0(drv, "Russia/EGRPR/Russia_EGRPR_soil_pedons.csv"))
   russ.HOR$SOURCEID = paste(russ.HOR$CardID, russ.HOR$SOIL_ID, sep="_")
   russ.HOR$wpg2 = russ.HOR$TEXTSTNS
   russ.HOR$SNDPPT <- russ.HOR$TEXTSAF + russ.HOR$TEXSCM
@@ -988,7 +1002,7 @@ if(!exists("chemsprops.EGRPR")){
   chemsprops.EGRPR$project_url = "http://egrpr.esoil.ru/"
   chemsprops.EGRPR$citation_url = "https://doi.org/10.19047/0136-1694-2016-86-115-123"
   chemsprops.EGRPR <- complete.vars(chemsprops.EGRPR, sel=c("oc", "CLYPPT"), coords = c("LONG", "LAT"))
-  saveRDS.gz(chemsprops.EGRPR, "/mnt/diskstation/data/Soil_points/Russia/EGRPR/chemsprops.EGRPR.rds")
+  saveRDS.gz(chemsprops.EGRPR, paste0(drv, "Russia/EGRPR/chemsprops.EGRPR.rds"))
 }
 dim(chemsprops.EGRPR)
 ## [1] 4506   39
@@ -1004,8 +1018,8 @@ dim(chemsprops.EGRPR)
 ```{r}
 if(!exists("chemsprops.NPDB")){
   NPDB.nm = c("Horizons.csv", "Chemical.csv", "Physical.csv")
-  NPDB.HOR = dplyr::left_join(plyr::join_all(lapply(paste0("/mnt/diskstation/data/Soil_points/Canada/NPDB/", NPDB.nm), read.csv), by = c("PEDON_ID", "LAYER_ID"), type = "full"), 
-          read.csv("/mnt/diskstation/data/Soil_points/Canada/NPDB/Info.csv"), by="PEDON_ID")
+  NPDB.HOR = dplyr::left_join(plyr::join_all(lapply(paste0(drv, "Canada/NPDB/", NPDB.nm), read.csv), by = c("PEDON_ID", "LAYER_ID"), type = "full"), 
+          read.csv(paste0(drv, "Canada/NPDB/Info.csv")), by="PEDON_ID")
   NPDB.HOR$tax = str_trim(tolower(paste(NPDB.HOR$CSSC_SBGRP, NPDB.HOR$CSSC_GTGRP, NPDB.HOR$CSSC_ORDER, sep=" ")))
   NPDB.tax = summary(as.factor(NPDB.HOR$tax), maxsum = length(levels(as.factor(NPDB.HOR$tax))))
   #write.csv(as.data.frame(NPDB.tax), "npdb_tax_summary.csv")
@@ -1030,7 +1044,7 @@ if(!exists("chemsprops.NPDB")){
   chemsprops.NPDB$citation_url = "https://open.canada.ca/data/en/dataset/6457fad6-b6f5-47a3-9bd1-ad14aea4b9e0"
   chemsprops.NPDB <- complete.vars(chemsprops.NPDB, sel=c("oc", "PH_H2O", "T_CLAY"), coords = c("DD_LONG_N", "DD_LAT_N"))
   #summary(as.factor(chemsprops.NPDB$CAL_YEAR))
-  saveRDS.gz(chemsprops.NPDB, "/mnt/diskstation/data/Soil_points/Canada/NPDB/chemsprops.NPDB.rds")
+  saveRDS.gz(chemsprops.NPDB, paste0(drv, "Canada/NPDB/chemsprops.NPDB.rds"))
 }
 dim(chemsprops.NPDB)
 ## [1] 55809    39
@@ -1046,7 +1060,7 @@ dim(chemsprops.NPDB)
 ```{r}
 if(!exists("chemsprops.CUFS")){
   ## Reading of the .dat file was tricky 
-  cufs.HOR = read.csv("/mnt/diskstation/data/Soil_points/Canada/CUFSDB/PROFILES.csv", stringsAsFactors = FALSE)
+  cufs.HOR = read.csv(paste0(drv, "Canada/CUFSDB/PROFILES.csv"), stringsAsFactors = FALSE)
   cufs.HOR$LOWER_HZN_LIMIT =cufs.HOR$UPPER_HZN_LIMIT + cufs.HOR$HZN_THICKNESS
   ## Correct depth (Canadian data can have negative depths for soil horizons):
   z.min.cufs <- ddply(cufs.HOR, .(LOCATION_ID), summarize, aggregated = min(UPPER_HZN_LIMIT, na.rm=TRUE))
@@ -1055,7 +1069,7 @@ if(!exists("chemsprops.CUFS")){
   z.shift.cufs <- ifelse(z.shift.cufs>0, 0, z.shift.cufs)
   cufs.HOR$hzn_top <- cufs.HOR$UPPER_HZN_LIMIT - z.shift.cufs
   cufs.HOR$hzn_bot <- cufs.HOR$LOWER_HZN_LIMIT - z.shift.cufs
-  cufs.SITE = read.csv("/mnt/diskstation/data/Soil_points/Canada/CUFSDB/SITES.csv", stringsAsFactors = FALSE)
+  cufs.SITE = read.csv(paste0(drv, "Canada/CUFSDB/SITES.csv"), stringsAsFactors = FALSE)
   #str(cufs.SITE)
   can.tbl = read.csv("./correlation/soil_types_correlation_table_Canada.csv")
   cufs.SITE$SSL_classification_name = dplyr::left_join(cufs.SITE["GGSG"], can.tbl, by=c("GGSG"="CSSC_Class"))$TAXOUSDA
@@ -1088,7 +1102,7 @@ if(!exists("chemsprops.CUFS")){
   chemsprops.CUFS$project_url = "https://cfs.nrcan.gc.ca/publications/centre/nofc"
   chemsprops.CUFS$citation_url = "https://doi.org/10.1002/ecy.2159"
   chemsprops.CUFS <- complete.vars(chemsprops.CUFS, sel=c("oc", "ph_h2o", "CLAY_PCT"))
-  saveRDS.gz(chemsprops.CUFS, "/mnt/diskstation/data/Soil_points/Canada/CUFSDB/chemsprops.CUFS.rds")
+  saveRDS.gz(chemsprops.CUFS, paste0(drv, "Canada/CUFSDB/chemsprops.CUFS.rds"))
 }
 dim(chemsprops.CUFS)
 ## [1] 15873    39
@@ -1100,7 +1114,7 @@ dim(chemsprops.CUFS)
 
 ```{r}
 if(!exists("chemsprops.CAPERM")){
-  caperm.HOR = vroom::vroom("/mnt/diskstation/data/Soil_points/Canada/NorthCanada/Bulk_density_CandNcontent_profiles_all_sites.csv")
+  caperm.HOR = vroom::vroom(paste0(drv, "Canada/NorthCanada/Bulk_density_CandNcontent_profiles_all_sites.csv"))
   #measurements::conv_unit("-99 36 15.7", from = "deg_min_sec", to = "dec_deg")
   #caperm.HOR$longitude_decimal_degrees = as.numeric(measurements::conv_unit(paste0("-", gsub('\"W', '', gsub("'", ' ', iconv(caperm.HOR$Coordinates_West, "UTF-8", "UTF-8", sub=' ')), fixed = TRUE)), from = "deg_min_sec", to = "dec_deg"))
   caperm.HOR$longitude_decimal_degrees = as.numeric(measurements::conv_unit(paste0("-", caperm.HOR$Cordinates_West), from = "deg_min_sec", to = "dec_deg"))
@@ -1124,7 +1138,7 @@ if(!exists("chemsprops.CAPERM")){
   chemsprops.CAPERM$project_url = "http://arp.arctic.ac.uk/projects/carbon-cycling-linkages-permafrost-systems-cyclops/"
   chemsprops.CAPERM$citation_url = "https://doi.org/10.5285/efa2a84b-3505-4221-a7da-12af3cdc1952"
   chemsprops.CAPERM <- complete.vars(chemsprops.CAPERM, sel=c("organic_carbon", "total_nitrogen_ncs"))
-  saveRDS.gz(chemsprops.CAPERM, "/mnt/diskstation/data/Soil_points/Canada/NorthCanada/chemsprops.CAPERM.rds")
+  saveRDS.gz(chemsprops.CAPERM, paste0(drv, "Canada/NorthCanada/chemsprops.CAPERM.rds"))
 }
 dim(chemsprops.CAPERM)
 ## [1] 1381   39
@@ -1136,12 +1150,12 @@ dim(chemsprops.CAPERM)
 
 ```{r}
 if(!exists("chemsprops.CNSOTER")){
-  sot.sites = read.csv("/mnt/diskstation/data/Soil_points/China/China_SOTERv1/CHINA_SOTERv1_Profile.csv")
+  sot.sites = read.csv(paste0(drv, "China/China_SOTERv1/CHINA_SOTERv1_Profile.csv"))
   st.cor = read.csv('./correlation/soil_type_correlation_ISRIC_WISE.csv')
   sot.sites$SSL_classification_name = paste0( dplyr::left_join(sot.sites["CLAF"], st.cor, by=c("CLAF"="FAO_90"), multiple = "first")$Class_1, " / ",
                        dplyr::left_join(sot.sites["CLAF"], st.cor, by=c("CLAF"="FAO_90"), multiple = "first")$Class_2)           
   #summary(as.factor(sot.sites$SSL_classification_name))
-  sot.horizons = read.csv("/mnt/diskstation/data/Soil_points/China/China_SOTERv1/CHINA_SOTERv1_Horizon.csv")
+  sot.horizons = read.csv(paste0(drv, "China/China_SOTERv1/CHINA_SOTERv1_Horizon.csv"))
   sot.HOR = plyr::join_all(list(sot.sites, sot.horizons), type = "full")
   sot.HOR$oc = sot.HOR$SOCA * 10
   sot.HOR$ca_ext = sot.HOR$EXCA * 200
@@ -1163,7 +1177,7 @@ if(!exists("chemsprops.CNSOTER")){
   chemsprops.CNSOT$project_url = "https://www.isric.org/explore/soter"
   chemsprops.CNSOT$citation_url = "https://isric.org/sites/default/files/isric_report_2008_06.pdf"
   chemsprops.CNSOT <- complete.vars(chemsprops.CNSOT, sel=c("TOTC", "PHAQ", "CLPC"), coords = c("LNGI", "LATI"))
-  saveRDS.gz(chemsprops.CNSOT, "/mnt/diskstation/data/Soil_points/China/China_SOTERv1/chemsprops.CNSOT.rds")
+  saveRDS.gz(chemsprops.CNSOT, paste0(drv, "China/China_SOTERv1/chemsprops.CNSOT.rds"))
 }
 dim(chemsprops.CNSOT)
 ## [1] 5115   39
@@ -1176,7 +1190,7 @@ dim(chemsprops.CNSOT)
 
 ```{r}
 if(!exists("chemsprops.SISLAC")){
-  sis.hor = read.csv("/mnt/diskstation/data/Soil_points/SA/SISLAC/sislac_v2.csv", stringsAsFactors = FALSE)
+  sis.hor = read.csv(paste0(drv, "SA/SISLAC/sislac_v2.csv"), stringsAsFactors = FALSE)
   #str(sis.hor)
   #summary(as.factor(sis.hor$source))
   ## Remove some redundant records:
@@ -1211,7 +1225,7 @@ if(!exists("chemsprops.SISLAC")){
   chemsprops.SISLAC$project_url = "https://github.com/DiazSergio/Revised-SISLAC-Database-Version1.2"
   chemsprops.SISLAC$citation_url = "https://doi.org/10.5194/essd-16-1229-2024"
   chemsprops.SISLAC <- complete.vars(chemsprops.SISLAC, sel=c("oc","ph","clay"), coords = c("longitude", "latitude"))
-  saveRDS.gz(chemsprops.SISLAC, "/mnt/diskstation/data/Soil_points/SA/SISLAC/chemsprops.SISLAC.rds")
+  saveRDS.gz(chemsprops.SISLAC, paste0(drv, "SA/SISLAC/chemsprops.SISLAC.rds"))
 }
 dim(chemsprops.SISLAC)
 ## [1] 92121    39
@@ -1231,7 +1245,7 @@ if(!exists("chemsprops.FEBR")){
   #febr.lab = febr::layer(dataset = "all", variable="all")
   #febr.lab = febr::observation(dataset = "all")
   #febr.md = febr::metadata(data.set = c("ctb0003", "ctb0002"))
-  febr.hor = read.csv(gzfile("/mnt/diskstation/data/Soil_points/Brasil/FEBR/febr-superconjunto.txt.gz"), stringsAsFactors = FALSE, dec = ",", sep = ";")
+  febr.hor = read.csv(gzfile(paste0(drv, "Brasil/FEBR/febr-superconjunto.txt.gz")), stringsAsFactors = FALSE, dec = ",", sep = ";")
   ## Rows: 50470 Columns: 40
   #head(febr.hor)
   #summary(febr.hor$coord_x)
@@ -1252,7 +1266,7 @@ if(!exists("chemsprops.FEBR")){
   #br.sm = summary(as.factor(febr.hor$taxon_sibcs))
   #br.tax = as.data.frame(br.sm)
   #br.tax$levels = attr(br.sm, "names")
-  #write.csv(br.tax, "/mnt/diskstation/data/Soil_points/Brasil/FEBR/febr_taxon_sibcs.csv")
+  #write.csv(br.tax, paste0(drv, "Brasil/FEBR/febr_taxon_sibcs.csv"))
   febr.tax = read.csv("./correlation/soil_type_correlation_BR_FEBR.csv")
   febr.hor$SSL_classification_name = dplyr::left_join(febr.hor["taxon_sibcs"], febr.tax, by=c("taxon_sibcs"="levels"), multiple = "first")$SSL_classification_name
   febr.hor$SSL_classification_name = ifelse(is.na(febr.hor$taxon_st), febr.hor$SSL_classification_name, febr.hor$taxon_st)
@@ -1266,7 +1280,7 @@ if(!exists("chemsprops.FEBR")){
   chemsprops.FEBR$project_url = "http://www.ufsm.br/febr/"
   chemsprops.FEBR$citation_url = "https://doi.org/10.1590/1678-992x-2017-0430"
   chemsprops.FEBR <- complete.vars(chemsprops.FEBR, sel=c("organic_carbon", "ph_h2o", "clay_tot_psa", "bulk_density_oven_dry"), coords = c("coord_x", "coord_y"))
-  saveRDS.gz(chemsprops.FEBR, "/mnt/diskstation/data/Soil_points/Brasil/FEBR/chemsprops.FEBR.rds")
+  saveRDS.gz(chemsprops.FEBR, paste0(drv, "Brasil/FEBR/chemsprops.FEBR.rds"))
 }
 dim(chemsprops.FEBR)
 ## [1] 24420    39
@@ -1279,7 +1293,7 @@ dim(chemsprops.FEBR)
 
 ```{r}
 if(!exists("chemsprops.PRONASOLOS")){
-  pronas.hor = as.data.frame(sf::read_sf("/mnt/diskstation/data/Soil_points/Brasil/Pronasolos/Perfis_PronaSolos_20201202v2.shp"))
+  pronas.hor = as.data.frame(sf::read_sf(paste0(drv, "Brasil/Pronasolos/Perfis_PronaSolos_20201202v2.shp")))
   ## 34,464 rows
   #head(pronas.hor)
   #summary(as.numeric(pronas.hor$carbono_or))
@@ -1334,7 +1348,7 @@ if(!exists("chemsprops.PRONASOLOS")){
   chemsprops.PRONASOLOS$project_url = "https://geoportal.cprm.gov.br/pronasolos/"
   chemsprops.PRONASOLOS$citation_url = "https://www.infoteca.cnptia.embrapa.br/infoteca/handle/doc/1135056"
   chemsprops.PRONASOLOS <- complete.vars(chemsprops.PRONASOLOS, sel=c("organic_carbon","ph_h2o","clay_total"))
-  saveRDS.gz(chemsprops.PRONASOLOS, "/mnt/diskstation/data/Soil_points/Brasil/Pronasolos/chemsprops.PRONASOLOS.rds")
+  saveRDS.gz(chemsprops.PRONASOLOS, paste0(drv, "Brasil/Pronasolos/chemsprops.PRONASOLOS.rds"))
 }
 dim(chemsprops.PRONASOLOS)
 ## [1] 32708    39
@@ -1347,7 +1361,7 @@ dim(chemsprops.PRONASOLOS)
 
 ```{r}
 if(!exists("chemsprops.Guatemala")){
-  gua.df = vroom::vroom("/mnt/diskstation/data/Soil_points/Guatemala/GTMSOCBD.csv")
+  gua.df = vroom::vroom(paste0(drv, "Guatemala/GTMSOCBD.csv"))
   ## Rows: 910 Columns: 12
   #str(gua.site)
   #summary(as.factor(gua.site$SOC_Method))
@@ -1373,7 +1387,7 @@ if(!exists("chemsprops.Guatemala")){
   chemsprops.Guatemala$project_url = "https://doi.org/10.6073/pasta/8dd15238c604c3ac75daf985548bd05c"
   chemsprops.Guatemala$citation_url = "https://doi.org/10.1111/ejss.13450"
   chemsprops.Guatemala <- complete.vars(chemsprops.Guatemala, sel=c("oc","BD"), coords = c("Longitude", "Latitude"))
-  saveRDS.gz(chemsprops.Guatemala, "/mnt/diskstation/data/Soil_points/Guatemala/chemsprops.Guatemala.rds")
+  saveRDS.gz(chemsprops.Guatemala, paste0(drv, "Guatemala/chemsprops.Guatemala.rds"))
 }
 dim(chemsprops.Guatemala)
 ## [1] 910   39
@@ -1388,7 +1402,7 @@ dim(chemsprops.Guatemala)
 
 ```{r}
 if(!exists("chemsprops.Ecuador")){
-  ecu.site = vroom::vroom("/mnt/diskstation/data/Soil_points/Ecuador/Harmonized_Soil_Database_of_Ecuador_profile_v0.2EDI.csv")
+  ecu.site = vroom::vroom(paste0(drv, "Ecuador/Harmonized_Soil_Database_of_Ecuador_profile_v0.2EDI.csv"))
   #summary(ecu.site$CORX)
   ecu.xy = terra::vect(ecu.site[,c("CORX","CORY")], geom=c("CORX", "CORY"), crs="EPSG:32717")
   ecu.ll = terra::project(ecu.xy, "EPSG:4326")
@@ -1398,7 +1412,7 @@ if(!exists("chemsprops.Ecuador")){
   ecu.site$site_obsdate = as.Date(ecu.site$FEMU, format="%d/%m/%y")
   ecu.site$site_obsdate[nchar(ecu.site$FEMU)>8] <- as.Date(ecu.site$FEMU, format="%d/%m/%Y")[nchar(ecu.site$FEMU)>8]
   ##summary(ecu.site$site_obsdate)
-  ecu.hor = vroom::vroom("/mnt/diskstation/data/Soil_points/Ecuador/Harmonized_Soil_Database_of_Ecuador_horizon_v0.2.csv")
+  ecu.hor = vroom::vroom(paste0(drv, "Ecuador/Harmonized_Soil_Database_of_Ecuador_horizon_v0.2.csv"))
   ecu.df = dplyr::left_join(ecu.hor, ecu.site, by="ID_PER", multiple="first")
   ## measured using wet-oxidation method (Walley-Black)
   ecu.df$oc = ecu.df$CO * 1.3
@@ -1429,7 +1443,7 @@ if(!exists("chemsprops.Ecuador")){
   chemsprops.Ecuador$project_url = "https://doi.org/10.6073/pasta/1560e803953c839e7aedef78ff7d3f6c"
   chemsprops.Ecuador$citation_url = "https://doi.org/10.5194/essd-15-431-2023"
   chemsprops.Ecuador <- complete.vars(chemsprops.Ecuador, sel=c("oc","PHAQ","ARCILLA","DA"))
-  saveRDS.gz(chemsprops.Ecuador, "/mnt/diskstation/data/Soil_points/Ecuador/chemsprops.Ecuador.rds")
+  saveRDS.gz(chemsprops.Ecuador, paste0(drv, "Ecuador/chemsprops.Ecuador.rds"))
 }
 dim(chemsprops.Ecuador)
 ## [1] 30188    39
@@ -1442,7 +1456,7 @@ dim(chemsprops.Ecuador)
 
 ```{r}
 if(!exists("chemsprops.MexicoINEGI")){
-  mex.xy = terra::vect("/mnt/diskstation/data/Soil_points/Mexico/INEGI/perfiles_serieii.shp", crs="EPSG:6362")
+  mex.xy = terra::vect(paste0(drv, "Mexico/INEGI/perfiles_serieii.shp"), crs="EPSG:6362")
   mex.ll <- terra::project(mex.xy, "EPSG:4326")
   #plot(mex.ll)
   mex.df = as.data.frame(mex.xy)
@@ -1468,7 +1482,7 @@ if(!exists("chemsprops.MexicoINEGI")){
   chemsprops.MexicoINEGI$project_url = "https://www.inegi.org.mx/"
   chemsprops.MexicoINEGI$citation_url = "https://www.elementospolipub.org/ojs/index.php/epp/article/view/16"
   chemsprops.MexicoINEGI <- complete.vars(chemsprops.MexicoINEGI, sel=c("oc","PH","R"))
-  saveRDS.gz(chemsprops.MexicoINEGI, "/mnt/diskstation/data/Soil_points/Mexico/INEGI/chemsprops.MexicoINEGI.rds")
+  saveRDS.gz(chemsprops.MexicoINEGI, paste0(drv, "Mexico/INEGI/chemsprops.MexicoINEGI.rds"))
 }
 dim(chemsprops.MexicoINEGI)
 ## [1] 16820    39
@@ -1482,7 +1496,7 @@ dim(chemsprops.MexicoINEGI)
 
 ```{r}
 if(!exists("chemsprops.CostaRica")){
-  cr.hor = read.csv("/mnt/diskstation/data/Soil_points/Costa_Rica/Base_de_datos_version_1.2.3.csv", stringsAsFactors = FALSE)
+  cr.hor = read.csv(paste0(drv, "Costa_Rica/Base_de_datos_version_1.2.3.csv"), stringsAsFactors = FALSE)
   #plot(cr.hor[,c("X","Y")], pch="+", asp=1)
   cr.hor$usiteid = paste(cr.hor$Provincia, cr.hor$Cantón, cr.hor$Id, sep="_")
   #summary(cr.hor$Corg.)
@@ -1505,7 +1519,7 @@ if(!exists("chemsprops.CostaRica")){
   chemsprops.CostaRica$project_url = "http://www.cia.ucr.ac.cr"
   chemsprops.CostaRica$citation_url = "https://doi.org/10.18845/tm.v32i7.42"
   chemsprops.CostaRica <- complete.vars(chemsprops.CostaRica, sel=c("oc","pH_H2O","ARCILLA","Densidad.Aparente"), coords = c("X", "Y"))
-  saveRDS.gz(chemsprops.CostaRica, "/mnt/diskstation/data/Soil_points/Costa_Rica/chemsprops.CostaRica.rds")
+  saveRDS.gz(chemsprops.CostaRica, paste0(drv, "Costa_Rica/chemsprops.CostaRica.rds"))
 }
 dim(chemsprops.CostaRica)
 ## [1] 2051   39
@@ -1521,12 +1535,12 @@ dim(chemsprops.CostaRica)
 ```{r}
 if(!exists("chemsprops.IRANSPDB")){
   na.s = c("?","","?.","??", -2147483647, -1.00e+308, "<NA>")
-  iran.hor = read.csv("/mnt/diskstation/data/Soil_points/Iran/iran_sdbana.txt", stringsAsFactors = FALSE, na.strings = na.s, header = FALSE)[,1:12]
+  iran.hor = read.csv(paste0(drv, "Iran/iran_sdbana.txt"), stringsAsFactors = FALSE, na.strings = na.s, header = FALSE)[,1:12]
   names(iran.hor) = c("site_key", "hzn_desgn", "hzn_top", "hzn_bot", "ph_h2o", "ec_water_extractable", "oc", "CACO", "PBS", "sand_total", "silt_total", "clay_total")
   iran.hor$hzn_top = ifelse(is.na(iran.hor$hzn_top) & iran.hor$hzn_desgn=="A", 0, iran.hor$hzn_top)
-  iran.hor2 = read.csv("/mnt/diskstation/data/Soil_points/Iran/iran_sdbhor.txt", stringsAsFactors = FALSE, na.strings = na.s, header = FALSE)[,1:8]
+  iran.hor2 = read.csv(paste0(drv, "Iran/iran_sdbhor.txt"), stringsAsFactors = FALSE, na.strings = na.s, header = FALSE)[,1:8]
   names(iran.hor2) = c("site_key", "layer_sequence", "DESI", "hzn_top", "hzn_bot", "M_colour", "texture_description", "hzn_desgn")
-  iran.site = read.csv("/mnt/diskstation/data/Soil_points/Iran/iran_sgdb.txt", stringsAsFactors = FALSE, na.strings = na.s, header = FALSE)
+  iran.site = read.csv(paste0(drv, "Iran/iran_sgdb.txt"), stringsAsFactors = FALSE, na.strings = na.s, header = FALSE)
   names(iran.site) = c("usiteid", "latitude_decimal_degrees", "longitude_decimal_degrees", "FAO", "Tax", "site_key")
   st.cor = read.csv('./correlation/soil_types_correlation_full_data_FAO74_US_CPSS.csv')
   st.cor$Correlation_ = toupper(st.cor$Correlation)
@@ -1543,7 +1557,7 @@ if(!exists("chemsprops.IRANSPDB")){
   chemsprops.IRANSPDB$project_url = ""
   chemsprops.IRANSPDB$citation_url = "https://doi.org/10.1016/j.geoderma.2007.04.022"
   chemsprops.IRANSPDB <- complete.vars(chemsprops.IRANSPDB, sel=c("organic_carbon","ph_h2o","clay_total"))
-  saveRDS.gz(chemsprops.IRANSPDB, "/mnt/diskstation/data/Soil_points/Iran/chemsprops.IRANSPDB.rds")
+  saveRDS.gz(chemsprops.IRANSPDB, paste0(drv, "Iran/chemsprops.IRANSPDB.rds"))
 }
 dim(chemsprops.IRANSPDB)
 ## [1] 4941   39
@@ -1557,7 +1571,7 @@ Note: this data set show extremely high SOC content (average 30%). It appears th
 
 ```{r}
 if(!exists("chemsprops.NCSCD")){
-  ncscd.hors <- read.csv("/mnt/diskstation/data/Soil_points/INT/NCSCD/Harden_etal_2012_Hugelius_etal_2013_cleaned_data.csv", stringsAsFactors = FALSE)
+  ncscd.hors <- read.csv(paste0(drv, "INT/NCSCD/Harden_etal_2012_Hugelius_etal_2013_cleaned_data.csv"), stringsAsFactors = FALSE)
   ## To translate LOI % into OC %: OC % = (−0.0013 × LOI %2 ) + (0.637 × LOI %)) was used
   ## for mineral soils: OC % = (−0.00005 × LOI %3 ) + (0.0059× LOI %2 ) + (0.362 × LOI %))
   ncscd.hors$oc = as.numeric(ncscd.hors$X.C)*10
@@ -1598,7 +1612,7 @@ if(!exists("chemsprops.NCSCD")){
   #                    method = "hexbin", col = "increment",
   #                    log.x = TRUE, log.y = TRUE,
   #                    xlab="SOC [g/kg]", ylab="SOC [kg/m3]")
-  saveRDS.gz(chemsprops.NCSCD, "/mnt/diskstation/data/Soil_points/INT/NCSCD/chemsprops.NCSCD.rds")
+  saveRDS.gz(chemsprops.NCSCD, paste0(drv, "INT/NCSCD/chemsprops.NCSCD.rds"))
 }
 dim(chemsprops.NCSCD)
 ## [1] 7371   39
@@ -1616,7 +1630,7 @@ knitr::include_graphics("img/fig_histogram_soc_bld_NCSCD.png")
 ```{r}
 if(!exists("chemsprops.NatSoil")){
   library(Hmisc) 
-  cmdb <- mdb.get("/mnt/diskstation/data/Soil_points/Australia/CSIRO/NatSoil_v2_20200612.mdb")
+  cmdb <- mdb.get(paste0(drv, "Australia/CSIRO/NatSoil_v2_20200612.mdb"))
   #str(cmdb$SITES)
   au.obs = cmdb$OBSERVATIONS[,c("s.id", "o.location.notes", "o.date.desc", "o.latitude.GDA94", "o.longitude.GDA94", "o.soil.taxonomy")]
   au.obs$o.soil.taxonomy = paste(au.obs$o.soil.taxonomy)
@@ -1631,7 +1645,7 @@ if(!exists("chemsprops.NatSoil")){
   #plot(au.xy[,c("coords.x1", "coords.x2")])
   ## all variables in one column and need to be sorted based on the lab method
   #summary(cmdb$LAB_METHODS$LABM.SHORT.NAME)
-  #write.csv(cmdb$LAB_METHODS, "/mnt/diskstation/data/Soil_points/Australia/CSIRO/NatSoil_v2_20200612_lab_methods.csv")
+  #write.csv(cmdb$LAB_METHODS, paste0(drv, "Australia/CSIRO/NatSoil_v2_20200612_lab_methods.csv"))
   lab.tbl = list(
           c("6_DC", "6A1", "6A1_UC", "6B1", "6B2", "6B2a", "6B2b", "6B3", "6B4", "6B4a", "6B4b", "6Z"), # %
           c("6B3a"), # g/kg
@@ -1692,7 +1706,7 @@ if(!exists("chemsprops.NatSoil")){
   chemsprops.NatSoil$project_url = "https://www.csiro.au/en/Do-business/Services/Enviro/Soil-archive"
   chemsprops.NatSoil$citation_url = "https://doi.org/10.25919/5eeb2a56eac12"
   chemsprops.NatSoil = complete.vars(chemsprops.NatSoil, sel = c("oc","db_od","clay_tot_psa","ph_h2o"), coords = c("coords.x1", "coords.x2"))
-  saveRDS.gz(chemsprops.NatSoil, "/mnt/diskstation/data/Soil_points/Australia/CSIRO/chemsprops.NatSoil.rds")
+  saveRDS.gz(chemsprops.NatSoil, paste0(drv, "Australia/CSIRO/chemsprops.NatSoil.rds"))
 }
 dim(chemsprops.NatSoil)
 ## [1] 89754    39
@@ -1705,17 +1719,17 @@ dim(chemsprops.NatSoil)
 
 ```{r}
 if(!exists("chemsprops.NAMSOTER")){
-  nam.profs <- read.csv("/mnt/diskstation/data/Soil_points/Namibia/NAMSOTER/Namibia_all_profiles.csv", na.strings = c("-9999", "999", "9999", "NA"))
+  nam.profs <- read.csv(paste0(drv, "Namibia/NAMSOTER/Namibia_all_profiles.csv"), na.strings = c("-9999", "999", "9999", "NA"))
   #nam.sm = summary(as.factor(nam.profs$CLAF))
   #nam.tax = as.data.frame(nam.sm)
   #nam.tax$levels = attr(nam.sm, "names")
-  #write.csv(nam.tax, "/mnt/diskstation/data/Soil_points/Namibia/NAMSOTER/namsoter_taxon_wrb.csv")
+  #write.csv(nam.tax, paste0(drv, "Namibia/NAMSOTER/namsoter_taxon_wrb.csv"))
   st.cor = read.csv('./correlation/soil_type_correlation_ISRIC_WISE.csv')
   st.cor$FAO_90_ = gsub("SOLS", "SOL", toupper(st.cor$FAO_90.1))
   nam.profs$SSL_classification_name = paste0( dplyr::left_join(nam.profs["CLAF"], st.cor, by=c("CLAF"="FAO_90_"), multiple = "first")$Class_1, " / ",
                     dplyr::left_join(nam.profs["CLAF"], st.cor, by=c("CLAF"="FAO_90_"), multiple = "first")$Class_2)
   #summary(as.factor(nam.profs$SSL_classification_name))
-  nam.hors <- read.csv("/mnt/diskstation/data/Soil_points/Namibia/NAMSOTER/Namibia_all_horizons.csv", na.strings = c("-9999", "999", "9999", "NA"))
+  nam.hors <- read.csv(paste0(drv, "Namibia/NAMSOTER/Namibia_all_horizons.csv"), na.strings = c("-9999", "999", "9999", "NA"))
   #summary(nam.hors$TOTN)
   #summary(nam.hors$TOTC)
   nam.hors$hzn_top <- NA
@@ -1751,7 +1765,7 @@ if(!exists("chemsprops.NAMSOTER")){
   chemsprops.NAMSOTER$project_url = ""
   chemsprops.NAMSOTER$citation_url = "https://edepot.wur.nl/485173"
   chemsprops.NAMSOTER = complete.vars(chemsprops.NAMSOTER, sel = c("TOTC","CLPC","PHAQ"), coords = c("LONG", "LATI"))
-  saveRDS.gz(chemsprops.NAMSOTER, "/mnt/diskstation/data/Soil_points/Namibia/chemsprops.NAMSOTER.rds")
+  saveRDS.gz(chemsprops.NAMSOTER, paste0(drv, "Namibia/chemsprops.NAMSOTER.rds"))
 }
 dim(chemsprops.NAMSOTER)
 ## [1] 2955   39
@@ -1765,7 +1779,7 @@ dim(chemsprops.NAMSOTER)
 
 ```{r}
 if(!exists("chemsprops.ISCND")){
-  ndp.profs <- read.csv("/mnt/diskstation/data/Soil_points/INT/ISCND/ndp018.csv", na.strings = c("-9999", "?", "NA"), stringsAsFactors = FALSE)
+  ndp.profs <- read.csv(paste0(drv, "INT/ISCND/ndp018.csv"), na.strings = c("-9999", "?", "NA"), stringsAsFactors = FALSE)
   names(ndp.profs) = c("PROFILE", "CODE", "CARBON", "NITROGEN", "LAT", "LONG", "ELEV", "SOURCE", "HOLDRIGE", "OLSON", "PARENT")
   for(j in c("CARBON","NITROGEN","ELEV")){  ndp.profs[,j] <- as.numeric(ndp.profs[,j])   }
   #summary(ndp.profs$CARBON)
@@ -1788,7 +1802,7 @@ if(!exists("chemsprops.ISCND")){
   chemsprops.ISCND$project_url = "https://iscn.fluxdata.org/data/"
   chemsprops.ISCND$citation_url = "https://dx.doi.org/10.3334/CDIAC/lue.ndp018"
   chemsprops.ISCND = complete.vars(chemsprops.ISCND, sel = c("CARBON"), coords = c("longitude_decimal_degrees", "latitude_decimal_degrees"))  
-  saveRDS.gz(chemsprops.ISCND, "/mnt/diskstation/data/Soil_points/INT/ISCND/chemsprops.ISCND.rds")
+  saveRDS.gz(chemsprops.ISCND, paste0(drv, "INT/ISCND/chemsprops.ISCND.rds"))
 }
 dim(chemsprops.ISCND)
 ## [1] 4114   39
@@ -1801,7 +1815,7 @@ dim(chemsprops.ISCND)
 
 ```{r}
 if(!exists("chemsprops.Alaska")){
-  al.gps <- read.csv("/mnt/diskstation/data/Soil_points/USA/Alaska_Interior/Site_GPS_coordinates_v1-1.csv", stringsAsFactors = FALSE)
+  al.gps <- read.csv(paste0(drv, "USA/Alaska_Interior/Site_GPS_coordinates_v1-1.csv"), stringsAsFactors = FALSE)
   ## Different datums!
   #summary(as.factor(al.gps$Datum))
   al.gps1 = al.gps[al.gps$Datum=="NAD83",]
@@ -1811,7 +1825,7 @@ if(!exists("chemsprops.Alaska")){
   al.gps[which(al.gps$Datum=="NAD83"),"Longitude"] = al.gps0@coords[,1]
   al.gps[which(al.gps$Datum=="NAD83"),"Latitude"] = al.gps0@coords[,2]
   al.gps$site = al.gps$Site
-  al.hor <- read.csv("/mnt/diskstation/data/Soil_points/USA/Alaska_Interior/Generalized_models_for_CandN_Alaska_v1-1.csv", stringsAsFactors = FALSE)
+  al.hor <- read.csv(paste0(drv, "USA/Alaska_Interior/Generalized_models_for_CandN_Alaska_v1-1.csv"), stringsAsFactors = FALSE)
   al.hor$hzn_top = al.hor$depth - as.numeric(al.hor$thickness)
   al.hor$site_obsdate = format(as.Date(al.hor$date, format = "%m/%d/%Y"), "%Y-%m-%d")
   ## "We analyzed soil samples for total C and N using a Carlo Erba NA1500 elemental analyzer (Fisons Instruments). 
@@ -1834,7 +1848,7 @@ if(!exists("chemsprops.Alaska")){
   #                    method = "hexbin", col = "increment",
   #                    log.x = TRUE, log.y = TRUE,
   #                    xlab="SOC [g/kg]", ylab="SOC [kg/m3]")
-  saveRDS.gz(chemsprops.Alaska, "/mnt/diskstation/data/Soil_points/USA/Alaska_Interior/chemsprops.Alaska.rds")
+  saveRDS.gz(chemsprops.Alaska, paste0(drv, "USA/Alaska_Interior/chemsprops.Alaska.rds"))
 }
 dim(chemsprops.Alaska)
 ## [1] 4013   39
@@ -1851,8 +1865,8 @@ knitr::include_graphics("img/fig_histogram_soc_Alaska.png")
 
 ```{r}
 if(!exists("chemsprops.bpht")){
-  bpht.site <- read.csv("/mnt/diskstation/data/Soil_points/Croatia/WBSoilHR_sites_1997.csv", stringsAsFactors = FALSE)
-  bpht.hors <- read.csv("/mnt/diskstation/data/Soil_points/Croatia/WBSoilHR_1997.csv", stringsAsFactors = FALSE)
+  bpht.site <- read.csv(paste0(drv, "Croatia/WBSoilHR_sites_1997.csv"), stringsAsFactors = FALSE)
+  bpht.hors <- read.csv(paste0(drv, "Croatia/WBSoilHR_1997.csv"), stringsAsFactors = FALSE)
   ## filter typos
   for(j in c("GOR", "DON", "MKP", "PH1", "PH2", "MSP", "MP", "MG", "HUM", "EXTN", "EXTP", "EXTK", "CAR")){
     bpht.hors[,j] = as.numeric(bpht.hors[,j])
@@ -1892,7 +1906,7 @@ if(!exists("chemsprops.bpht")){
   chemsprops.bpht$project_url = "http://www.haop.hr/"
   chemsprops.bpht$citation_url = "https://books.google.nl/books?id=k_a2MgAACAAJ"
   chemsprops.bpht = complete.vars(chemsprops.bpht, sel = c("oc","MG","PH1","k_ext"))
-  saveRDS.gz(chemsprops.bpht, "/mnt/diskstation/data/Soil_points/Croatia/chemsprops.bpht.rds")
+  saveRDS.gz(chemsprops.bpht, paste0(drv, "Croatia/chemsprops.bpht.rds"))
 }
 dim(chemsprops.bpht)
 ## [1] 5757   39
@@ -1906,9 +1920,9 @@ dim(chemsprops.bpht)
 
 ```{r}
 if(!exists("chemsprops.RemnantSOC")){
-  rem.hor <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/INT/WHRC_remnant_SOC/remnant+native+SOC+database+for+release.xlsx", sheet = 3)
-  rem.site <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/INT/WHRC_remnant_SOC/remnant+native+SOC+database+for+release.xlsx", sheet = 2)
-  rem.ref <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/INT/WHRC_remnant_SOC/remnant+native+SOC+database+for+release.xlsx", sheet = 4)
+  rem.hor <- openxlsx::read.xlsx(paste0(drv, "INT/WHRC_remnant_SOC/remnant+native+SOC+database+for+release.xlsx"), sheet = 3)
+  rem.site <- openxlsx::read.xlsx(paste0(drv, "INT/WHRC_remnant_SOC/remnant+native+SOC+database+for+release.xlsx"), sheet = 2)
+  rem.ref <- openxlsx::read.xlsx(paste0(drv, "INT/WHRC_remnant_SOC/remnant+native+SOC+database+for+release.xlsx"), sheet = 4)
   rem.site = plyr::join(rem.site, rem.ref[,c("Source.No.","DOI","Sample_year")], by=c("Source.No."))
   rem.site$Site = rem.site$Site.ID
   rem.horA = plyr::join(rem.hor, rem.site, by=c("Site"))
@@ -1927,7 +1941,7 @@ if(!exists("chemsprops.RemnantSOC")){
   chemsprops.RemnantSOC$project_url = "https://www.woodwellclimate.org/research-area/carbon/"
   chemsprops.RemnantSOC$citation_url = "http://dx.doi.org/10.1073/pnas.1706103114"
   chemsprops.RemnantSOC = complete.vars(chemsprops.RemnantSOC, sel = c("OC.(g/kg)","oc_d"), coords = c("Longitude", "Latitude"))  
-  saveRDS.gz(chemsprops.RemnantSOC, "/mnt/diskstation/data/Soil_points/INT/WHRC_remnant_SOC/chemsprops.RemnantSOC.rds")
+  saveRDS.gz(chemsprops.RemnantSOC, paste0(drv, "INT/WHRC_remnant_SOC/chemsprops.RemnantSOC.rds"))
 }
 dim(chemsprops.RemnantSOC)
 ## [1] 1631   39
@@ -1941,7 +1955,7 @@ Note: some information is available about column names (see: <https://www.nature
 
 ```{r}
 if(!exists("chemsprops.SoilHealthDB")){
-  shdb.hor <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/INT/SoilHealthDB/SoilHealthDB_V2.xlsx", sheet = 1, na.strings = c("NA", "NotAvailable", "Not-available"))
+  shdb.hor <- openxlsx::read.xlsx(paste0(drv, "INT/SoilHealthDB/SoilHealthDB_V2.xlsx"), sheet = 1, na.strings = c("NA", "NotAvailable", "Not-available"))
   #summary(as.factor(shdb.hor$SoilFamily))
   #summary(as.factor(shdb.hor$SamplingDepth))
   shdb.hor$hzn_top = as.numeric(sapply(shdb.hor$SamplingDepth, function(i){ strsplit(i, "-to-")[[1]][1] }))
@@ -1963,7 +1977,7 @@ if(!exists("chemsprops.SoilHealthDB")){
   chemsprops.SoilHealthDB$project_url = "https://github.com/jinshijian/SoilHealthDB"
   chemsprops.SoilHealthDB$citation_url = "https://doi.org/10.1038/s41597-020-0356-3"
   chemsprops.SoilHealthDB = complete.vars(chemsprops.SoilHealthDB, sel = c("ClayPerc", "SoilpH", "oc", "SoilFamily"), coords = c("Longitude", "Latitude"))  
-  saveRDS.gz(chemsprops.SoilHealthDB, "/mnt/diskstation/data/Soil_points/INT/SoilHealthDB/chemsprops.SoilHealthDB.rds")
+  saveRDS.gz(chemsprops.SoilHealthDB, paste0(drv, "INT/SoilHealthDB/chemsprops.SoilHealthDB.rds"))
 }
 dim(chemsprops.SoilHealthDB)
 ## [1] 5050   39
@@ -1978,7 +1992,7 @@ Note: Many missing years for PREVIOUS SOC AND SOIL CHARACTERISTICS.
 ```{r}
 if(!exists("chemsprops.SOCPDB")){
   library("readxl")
-  socpdb <- readxl::read_excel("/mnt/diskstation/data/Soil_points/INT/SOCPDB/SOC_perennials_DATABASE.xls", skip=1, sheet = 1)
+  socpdb <- readxl::read_excel(paste0(drv, "INT/SOCPDB/SOC_perennials_DATABASE.xls"), skip=1, sheet = 1)
   #names(socpdb)
   #summary(as.factor(socpdb$USDA))
   #summary(as.numeric(socpdb$year_measure))
@@ -2015,7 +2029,7 @@ if(!exists("chemsprops.SOCPDB")){
   chemsprops.SOCPDB$project_url = "https://africap.info/"
   chemsprops.SOCPDB$citation_url = "https://doi.org/10.1038/s41597-019-0062-1"
   chemsprops.SOCPDB = complete.vars(chemsprops.SOCPDB, sel = c("organic_carbon","ph_h2o","clay_total"))
-  saveRDS.gz(chemsprops.SOCPDB, "/mnt/diskstation/data/Soil_points/INT/SOCPDB/chemsprops.SOCPDB.rds")
+  saveRDS.gz(chemsprops.SOCPDB, paste0(drv, "INT/SOCPDB/chemsprops.SOCPDB.rds"))
 }
 dim(chemsprops.SOCPDB)
 ## [1] 2416   39
@@ -2030,7 +2044,7 @@ Note: For protection of data privacy, the coordinate was randomly generated with
 
 ```{r}
 if(!exists("chemsprops.BZE_LW")){
-  site.de <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/Germany/SITE.xlsx", sheet = 1)
+  site.de <- openxlsx::read.xlsx(paste0(drv, "Germany/SITE.xlsx"), sheet = 1)
   site.de$site_obsdate = format(as.Date(paste0("01-", site.de$Sampling_month, "-", site.de$Sampling_year), format="%d-%m-%Y"), "%Y-%m-%d")
   site.de.xy = site.de[,c("PointID","xcoord","ycoord")]
   ## 3104
@@ -2043,8 +2057,8 @@ if(!exists("chemsprops.BZE_LW")){
   site.de.ll <- data.frame(spTransform(site.de.xy, CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")))
   site.de$longitude_decimal_degrees = site.de.ll[,2]
   site.de$latitude_decimal_degrees = site.de.ll[,3]
-  hor.de <- openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/Germany/LABORATORY_DATA.xlsx", sheet = 1)
-  #hor.de = plyr::join(openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/Germany/LABORATORY_DATA.xlsx", sheet = 1), openxlsx::read.xlsx("/mnt/diskstation/data/Soil_points/Germany/HORIZON_DATA.xlsx", sheet = 1), by="PointID")
+  hor.de <- openxlsx::read.xlsx(paste0(drv, "Germany/LABORATORY_DATA.xlsx"), sheet = 1)
+  #hor.de = plyr::join(openxlsx::read.xlsx(paste0(drv, "Germany/LABORATORY_DATA.xlsx"), sheet = 1), openxlsx::read.xlsx(paste0(drv, "Germany/HORIZON_DATA.xlsx"), sheet = 1), by="PointID")
   ## 17,189 rows
   horALL.de = plyr::join(hor.de, site.de, by="PointID")
   ## Sand content [Mass-%]; grain size 63-2000µm (DIN ISO 11277)
@@ -2066,7 +2080,7 @@ if(!exists("chemsprops.BZE_LW")){
   chemsprops.BZE_LW$project_url = "https://www.thuenen.de/de/ak/"
   chemsprops.BZE_LW$citation_url = "https://doi.org/10.1002/jpln.202000113"
   chemsprops.BZE_LW = complete.vars(chemsprops.BZE_LW, sel = c("TOC", "pH_H2O", "Clay"))
-  saveRDS.gz(chemsprops.BZE_LW, "/mnt/diskstation/data/Soil_points/Germany/chemsprops.BZE_LW.rds")
+  saveRDS.gz(chemsprops.BZE_LW, paste0(drv, "Germany/chemsprops.BZE_LW.rds"))
 }
 dim(chemsprops.BZE_LW)
 ## [1] 17189    39
@@ -2080,7 +2094,7 @@ dim(chemsprops.BZE_LW)
 
 ```{r}
 if(!exists("chemsprops.Vlaanderen2010")){
-  site.vl <- read.csv("/mnt/diskstation/data/Soil_points/Belgium/Vlaanderen/Aardewerk-Vlaanderen-2010_Profiel.csv")
+  site.vl <- read.csv(paste0(drv, "Belgium/Vlaanderen/Aardewerk-Vlaanderen-2010_Profiel.csv"))
   site.vl$site_obsdate = format(as.Date(sapply(site.vl$Profilering_Datum, function(i){strsplit(i, " ")[[1]][1]}), format="%d-%m-%Y"), "%Y-%m-%d")
   site.vl.xy = site.vl[,c("ID","Coordinaat_Lambert72_X","Coordinaat_Lambert72_Y")]
   ## 7020
@@ -2091,7 +2105,7 @@ if(!exists("chemsprops.Vlaanderen2010")){
   site.vl$longitude_decimal_degrees = join(site.vl["ID"], site.vl.ll, by="ID")$coords.x1
   site.vl$latitude_decimal_degrees = join(site.vl["ID"], site.vl.ll, by="ID")$coords.x2
   site.vl$Profiel_ID = site.vl$ID
-  hor.vl <- read.csv("/mnt/diskstation/data/Soil_points/Belgium/Vlaanderen/Aardewerk-Vlaanderen-2010_Horizont.csv")
+  hor.vl <- read.csv(paste0(drv, "Belgium/Vlaanderen/Aardewerk-Vlaanderen-2010_Horizont.csv"))
   ## 42,529 rows
   horALL.vl = plyr::join(hor.vl, site.vl, by="Profiel_ID")
   horALL.vl$oc = horALL.vl$Humus*10 / 2 * 1.3
@@ -2113,7 +2127,7 @@ if(!exists("chemsprops.Vlaanderen2010")){
   chemsprops.Vlaanderen$project_url = "https://www.dov.vlaanderen.be"
   chemsprops.Vlaanderen$citation_url = "https://doi.org/10.1016/j.geoderma.2015.04.001"
   chemsprops.Vlaanderen = complete.vars(chemsprops.Vlaanderen, sel = c("oc", "pH_H2O", "T0_2"))
-  saveRDS.gz(chemsprops.Vlaanderen, "/mnt/diskstation/data/Soil_points/Belgium/Vlaanderen/chemsprops.Vlaanderen.rds")
+  saveRDS.gz(chemsprops.Vlaanderen, paste0(drv, "Belgium/Vlaanderen/chemsprops.Vlaanderen.rds"))
 }
 dim(chemsprops.Vlaanderen)
 ## [1] 41364    39
@@ -2128,8 +2142,8 @@ Note: Data download <https://doi.org/10.4121/c90215b3-bdc6-4633-b721-4c4a0259d6d
 ```{r}
 if(!exists("chemsprops.NLBIS")){
   ## Tabular datasets of each georeferenced soil property point data are provided as separate CSV files for each soil property.
-  nlbis.lst = list.files("/mnt/diskstation/data/Soil_points/Netherlands/BIS", pattern=glob2rx("*.csv.gz"), full.names = TRUE)
-  nlbis.horA = vroom::vroom("/mnt/diskstation/data/Soil_points/Netherlands/BIS/tbl_cal_SOM_per.csv.gz")
+  nlbis.lst = list.files(paste0(drv, "Netherlands/BIS"), pattern=glob2rx("*.csv.gz"), full.names = TRUE)
+  nlbis.horA = vroom::vroom(paste0(drv, "Netherlands/BIS/tbl_cal_SOM_per.csv.gz"))
   nlbis.hor = dplyr::left_join(nlbis.horA, plyr::join_all(lapply(nlbis.lst[-grep("_SOM", nlbis.lst)], function(i){vroom::vroom(gzfile(i))}), type="full", by=c("sample_id", "site_id", "hor_nr")), multiple = "first")
   #str(nlbis.hor)
   ##855,950 × 21
@@ -2176,7 +2190,7 @@ if(!exists("chemsprops.NLBIS")){
   chemsprops.NLBIS$project_url = "https://git.wageningenur.nl/helfe001/bis-4d"
   chemsprops.NLBIS$citation_url = "https://doi.org/10.5194/essd-16-2941-2024"
   chemsprops.NLBIS = complete.vars(chemsprops.NLBIS, sel = c("organic_carbon", "pH_KCl"))
-  saveRDS.gz(chemsprops.NLBIS, "/mnt/diskstation/data/Soil_points/Netherlands/chemsprops.NLBIS.rds")
+  saveRDS.gz(chemsprops.NLBIS, paste0(drv, "Netherlands/chemsprops.NLBIS.rds"))
 ##  writeVector(terra::vect(chemsprops.NLBIS, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "/data/wri_soil/chemsprops.NLBIS.gpkg")
 }
 dim(chemsprops.NLBIS)
@@ -2191,7 +2205,7 @@ dim(chemsprops.NLBIS)
 
 ```{r}
 if(!exists("chemsprops.CHLSOC")){
-  chl.hor <- read.csv("/mnt/diskstation/data/Soil_points/Chile/CHLSOC/CHLSOC_v1.0.csv", stringsAsFactors = FALSE)
+  chl.hor <- read.csv(paste0(drv, "Chile/CHLSOC/CHLSOC_v1.0.csv"), stringsAsFactors = FALSE)
   #summary(chl.hor$oc)
   chl.hor$oc = chl.hor$oc*10
   #summary(chl.hor$bd)
@@ -2206,7 +2220,7 @@ if(!exists("chemsprops.CHLSOC")){
   chemsprops.CHLSOC$project_url = "https://doi.org/10.17605/OSF.IO/NMYS3"
   chemsprops.CHLSOC$citation_url = "https://doi.org/10.5194/essd-12-457-2020"
   chemsprops.CHLSOC = complete.vars(chemsprops.CHLSOC, sel = c("oc", "bd"), coords = c("long", "lat"))
-  saveRDS.gz(chemsprops.CHLSOC, "/mnt/diskstation/data/Soil_points/Chile/chemsprops.CHLSOC.rds")
+  saveRDS.gz(chemsprops.CHLSOC, paste0(drv, "Chile/chemsprops.CHLSOC.rds"))
 }
 dim(chemsprops.CHLSOC)
 ## [1] 16903    39
@@ -2219,7 +2233,7 @@ dim(chemsprops.CHLSOC)
 
 ```{r}
 if(!exists("chemsprops.ScotlandNSIS1")){
-  sco.xy = read.csv("/mnt/diskstation/data/Soil_points/Scotland/NSIS_10km.csv")
+  sco.xy = read.csv(paste0(drv, "Scotland/NSIS_10km.csv"))
   coordinates(sco.xy) = ~ easting + northing
   proj4string(sco.xy) = "EPSG:27700"
   sco.ll = as.data.frame(spTransform(sco.xy, CRS("EPSG:4326")))
@@ -2259,7 +2273,7 @@ if(!exists("chemsprops.ScotlandNSIS1")){
   chemsprops.ScotlandNSIS1$project_url = "http://soils.environment.gov.scot/"
   chemsprops.ScotlandNSIS1$citation_url = "https://doi.org/10.5281/zenodo.4650230"
   chemsprops.ScotlandNSIS1 = complete.vars(chemsprops.ScotlandNSIS1, sel = c("organic_carbon", "ph_h2o", "clay_total"))
-  saveRDS.gz(chemsprops.ScotlandNSIS1, "/mnt/diskstation/data/Soil_points/Scotland/chemsprops.ScotlandNSIS1.rds")
+  saveRDS.gz(chemsprops.ScotlandNSIS1, paste0(drv, "Scotland/chemsprops.ScotlandNSIS1.rds"))
 }
 dim(chemsprops.ScotlandNSIS1)
 ## [1] 3091   39
@@ -2271,7 +2285,7 @@ dim(chemsprops.ScotlandNSIS1)
 
 ```{r}
 if(!exists("chemsprops.QuebecTEX")){
-  que.xy = read.csv(gzfile("/mnt/diskstation/data/Soil_points/Canada/Quebec/RawData.csv.gz"))
+  que.xy = read.csv(gzfile(paste0(drv, "Canada/Quebec/RawData.csv.gz")))
   #summary(as.factor(que.xy$Horizon))
   ## horizon depths were not measured - we assume 15-30 and 30-80
   que.xy$hzn_top = ifelse(que.xy$Horizon=="B", 15, 30)
@@ -2293,7 +2307,7 @@ if(!exists("chemsprops.QuebecTEX")){
   chemsprops.QuebecTEX$project_url = ""
   chemsprops.QuebecTEX$citation_url = "https://doi.org/10.7717/peerj.11685"
   chemsprops.QuebecTEX = complete.vars(chemsprops.QuebecTEX, sel = c("clay_total"))
-  saveRDS.gz(chemsprops.QuebecTEX, "/mnt/diskstation/data/Soil_points/Canada/chemsprops.QuebecTEX.rds")
+  saveRDS.gz(chemsprops.QuebecTEX, paste0(drv, "Canada/chemsprops.QuebecTEX.rds"))
 }
 dim(chemsprops.QuebecTEX)
 ## [1] 29570    39
@@ -2305,10 +2319,10 @@ dim(chemsprops.QuebecTEX)
 
 ```{r}
 if(!exists("chemsprops.Slovenia")){
-  slo.xy = read_sf("/mnt/diskstation/data/Soil_points/Slovenia/PedoloskiProfili.shp")
+  slo.xy = read_sf(paste0(drv, "Slovenia/PedoloskiProfili.shp"))
   slo.sf = sf::st_transform(slo.xy, "epsg:4326")
   slo.df = data.frame(cbind(as.data.frame(slo.sf), st_coordinates(slo.sf)))
-  slo.hor = foreign::read.dbf("/mnt/diskstation/data/Soil_points/Slovenia/Horizonti_v_PedoloskihProfilih.DBF", as.is=TRUE)
+  slo.hor = foreign::read.dbf(paste0(drv, "Slovenia/Horizonti_v_PedoloskihProfilih.DBF"), as.is=TRUE)
   sloALL = dplyr::left_join(slo.hor, slo.df)
   sloALL = sloALL[!is.na(sloALL$X.1),]
   ## [1] 11509    71
@@ -2352,7 +2366,7 @@ if(!exists("chemsprops.Slovenia")){
   chemsprops.Slovenia$project_url = "https://rkg.gov.si/vstop/"
   chemsprops.Slovenia$citation_url = "https://doi.org/10.1007/978-3-030-14066-3_6"
   chemsprops.Slovenia = complete.vars(chemsprops.Slovenia, sel = c("organic_carbon", "ph_h2o", "GLINA"), coords = c("X.1", "Y.1"))
-  saveRDS.gz(chemsprops.Slovenia, "/mnt/diskstation/data/Soil_points/Slovenia/chemsprops.Slovenia.rds")
+  saveRDS.gz(chemsprops.Slovenia, paste0(drv, "Slovenia/chemsprops.Slovenia.rds"))
 }
 dim(chemsprops.Slovenia)
 ## [1] 11509    39
@@ -2366,10 +2380,10 @@ Note: INFOSOLO project <https://projects.iniav.pt/infosolo/>
 
 ```{r}
 if(!exists("chemsprops.INFOSOLO")){
-  port.nam = vroom::vroom("/mnt/diskstation/data/Soil_points/Portugal/description.txt", col_names = FALSE)[-c(5:6),]
-  port.site = vroom::vroom("/mnt/diskstation/data/Soil_points/Portugal/soil.txt", col_names = make.names(port.nam$X2[port.nam$X3=="Soil"]))
+  port.nam = vroom::vroom(paste0(drv, "Portugal/description.txt"), col_names = FALSE)[-c(5:6),]
+  port.site = vroom::vroom(paste0(drv, "Portugal/soil.txt"), col_names = make.names(port.nam$X2[port.nam$X3=="Soil"]))
   hor.nm.port = make.names(port.nam$X2[port.nam$X3=="Properties"])
-  port.hor = vroom::vroom("/mnt/diskstation/data/Soil_points/Portugal/properties.txt", col_names = c("ID2", "ID1", hor.nm.port[-1]), na = c("", "\\N"))
+  port.hor = vroom::vroom(paste0(drv, "Portugal/properties.txt"), col_names = c("ID2", "ID1", hor.nm.port[-1]), na = c("", "\\N"))
   portALL = dplyr::left_join(port.hor, port.site, by = "ID1")
   ## [1] 9934   51
   #plot(portALL[,c("Long","Lat")], pch="+", asp=1)
@@ -2402,7 +2416,7 @@ if(!exists("chemsprops.INFOSOLO")){
   chemsprops.PT.INFOSOLO$project_url = "https://projects.iniav.pt/infosolo/"
   chemsprops.PT.INFOSOLO$citation_url = "http://dx.doi.org/10.1016/j.catena.2017.07.020"
   chemsprops.PT.INFOSOLO = complete.vars(chemsprops.PT.INFOSOLO, sel = c("organic_carbon", "pH", "C"), coords = c("Long", "Lat"))
-  saveRDS.gz(chemsprops.PT.INFOSOLO, "/mnt/diskstation/data/Soil_points/Portugal/chemsprops.PT.INFOSOLO.rds")
+  saveRDS.gz(chemsprops.PT.INFOSOLO, paste0(drv, "Portugal/chemsprops.PT.INFOSOLO.rds"))
 }
 dim(chemsprops.PT.INFOSOLO)
 ## [1] 9934   39
@@ -2416,8 +2430,8 @@ Note: This is relatively small data set focused on 8 commercial fields / farms.
 
 ```{r}
 if(!exists("chemsprops.Potash2023")){
-  multisite.xy = read.csv("/mnt/diskstation/data/Soil_points/USA/Multi_site_evaluation/locations.csv")
-  multisite.lb = read.csv("/mnt/diskstation/data/Soil_points/USA/Multi_site_evaluation/measurements.csv")
+  multisite.xy = read.csv(paste0(drv, "USA/Multi_site_evaluation/locations.csv"))
+  multisite.lb = read.csv(paste0(drv, "USA/Multi_site_evaluation/measurements.csv"))
   multisite.lb$oc_d = round(as.numeric(multisite.lb$SOCc) * 10 * multisite.lb$BD, 2)
   #summary(multisite.lb$oc_d)
   multisite.lb$organic_carbon = multisite.lb$SOCc*10
@@ -2436,7 +2450,7 @@ if(!exists("chemsprops.Potash2023")){
   chemsprops.Potash2023$source_db = "Potash_et_al_2023"
   chemsprops.Potash2023$project_url = "https://sustainability.illinois.edu/new-method-shows-promise-for-accurate-efficient-soil-carbon-estimates/"
   chemsprops.Potash2023$citation_url = "https://doi.org/10.1016/j.geoderma.2023.116587"
-  saveRDS.gz(chemsprops.Potash2023, "/mnt/diskstation/data/Soil_points/USA/Multi_site_evaluation/chemsprops.Potash2023.rds")
+  saveRDS.gz(chemsprops.Potash2023, paste0(drv, "USA/Multi_site_evaluation/chemsprops.Potash2023.rds"))
 }
 dim(chemsprops.Potash2023)
 ## [1] 3977   39
@@ -2528,7 +2542,7 @@ if(!exists("chemsprops.GLANCE")){
   chemsprops.SIM = bare.ex[,col.names]
   chemsprops.SIM$project_url = "https://doi.org/10.34911/rdnt.x4xfh3"
   chemsprops.SIM$citation_url = "https://doi.org/10.1038/s41597-023-02798-5"
-  saveRDS.gz(chemsprops.SIM, "/mnt/diskstation/data/Soil_points/INT/chemsprops.SIM.rds")
+  saveRDS.gz(chemsprops.SIM, paste0(drv, "INT/chemsprops.SIM.rds"))
 }
 dim(chemsprops.SIM)
 ## [1] 80652    39
@@ -2551,7 +2565,7 @@ nm.l = lapply(ds.n, function(i){ names(get(i)) })
 #x = lapply(nm.l, length)
 nm.df = data.frame(do.call(rbind, nm.l))
 nm.df$data.set = ds.n
-#write.csv(nm.df, "/mnt/diskstation/data/Soil_points/chemsprops.validate_column.names.csv")
+#write.csv(nm.df, paste0(drv, "chemsprops.validate_column.names.csv"))
 tot_sprops = dplyr::bind_rows(lapply(ds.n, function(i){ mutate_all(setNames(get(i), col.names), as.character) }))
 ## convert to numeric:
 for(j in c("longitude_decimal_degrees", "latitude_decimal_degrees", "layer_sequence", 
@@ -2631,7 +2645,7 @@ proj4string(tot_sprops.pnts) <- "EPSG:4326"
 Density of points per 100 x 100 km grid (IGH projection):
 
 ```{r, eval=FALSE}
-g1 = terra::vect("/mnt/diskstation/data/Soil_points/tiles_GH_100km_land.gpkg")
+g1 = terra::vect(paste0(drv, "tiles_GH_100km_land.gpkg"))
 ov.g1 = terra::extract(g1["ID"], terra::project(terra::vect(tot_sprops.pnts), crs(g1)))
 g1.c = summary(as.factor(ov.g1$ID), maxsum = length(levels(as.factor(ov.g1$ID))))
 g1.df = data.frame(count=g1.c, ID=attr(g1.c, "names"))
@@ -2817,7 +2831,7 @@ Write all soil profiles using a wide format:
 
 ```{r, eval=FALSE}
 sel.rm.pnts  <- tot_sprops_w.pnts$source_db=="LUCAS_2009" | tot_sprops_w.pnts$source_db=="LUCAS_2015" | tot_sprops_w.pnts$source_db=="LUCAS_2018" | tot_sprops_w.pnts$site_key %in% mng.rm ## | tot_sprops_w.pnts$site_key %in% rem.sp
-out.gpkg = "/mnt/diskstation/data/Soil_points/sol_chem.pnts_horizons.gpkg"
+out.gpkg = paste0(drv, "sol_chem.pnts_horizons.gpkg")
 #unlink(out.gpkg)
 if(!file.exists(out.gpkg)){
   sf::st_write(st_as_sf(tot_sprops_w.pnts), out.gpkg, "sol_chem.pnts_horizons", driver="GPKG", append=FALSE)
@@ -2855,8 +2869,8 @@ knitr::include_graphics("./img/sol_chem.pnts_sites.png")
 
 ```{r, eval=FALSE}
 #saveRDS.gz(tot_sprops.s, "./out/rds/sol_chem.pnts_horizons.rds")
-saveRDS.gz(tot_sprops, "/mnt/diskstation/data/Soil_points/sol_chem.pnts_horizons.rds")
-saveRDS.gz(tot_sprops.pnts, "/mnt/diskstation/data/Soil_points/sol_chem.pnts_sites.rds")
+saveRDS.gz(tot_sprops, paste0(drv, "sol_chem.pnts_horizons.rds"))
+saveRDS.gz(tot_sprops.pnts, paste0(drv, "sol_chem.pnts_sites.rds"))
 #library(farff)
 #writeARFF(tot_sprops.s, "./out/arff/sol_chem.pnts_horizons.arff", overwrite = TRUE)
 ## compressed CSV
@@ -2868,5 +2882,5 @@ saveRDS.gz(tot_sprops.pnts, "/mnt/diskstation/data/Soil_points/sol_chem.pnts_sit
 Save temp object:
 
 ```{r, eval=FALSE}
-save.image.pigz(file="soilchem.RData")
+save.image.pigz(file="soilchem.RData", n.cores = 30)
 ```

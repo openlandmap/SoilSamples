@@ -89,7 +89,7 @@ Some existing soil Observations and Measurements (O&M) soil data initiatives inc
   - [**Global soil macrofauna database**](http://macrofauna.earthworms.info/),\
   - [**Global soil respiration database (SRDB)**](https://github.com/bpbond/srdb),\
   - [**International Soil Modeling Consortium (ISMC)**](https://soil-modeling.org),\
-  - [**International Soil Moisture Network**](https://ismn.geo.tuwien.ac.at/en/),\
+  - [**International Soil Moisture Network**](https://ismn.earth/en/),\
   - [**International Soil Radiocarbon Database (ISRaD)**](https://soilradiocarbon.org),\
   - [**International Soil Carbon Network (ISCN)**](http://iscn.fluxdata.org/),\
   - [**LandPKS project**](http://portal.landpotential.org/#/landpksmap),\

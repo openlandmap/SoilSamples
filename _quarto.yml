@@ -58,7 +58,7 @@ website:
           - 040-import_usda_soil_tax_data.qmd
   page-footer:
     background: light
-    left: "© 2024, OpenGeoHub foundation"
+    left: "© 2025, OpenGeoHub foundation"
     right:
       - icon: github
         href: https://github.com/OpenGeoHub/SoilSamples

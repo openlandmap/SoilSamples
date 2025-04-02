@@ -21,6 +21,7 @@ library(data.table)
 library(terra)
 #load.pigz("soilusda.RData")
 source('./R/data_functions.R')
+drv = "/data/Soil_points/"
 ```
 
 ## USDA soil taxonomy
@@ -125,7 +126,7 @@ We import the 3 data sets in R:
 ```{r}
 if(!exists("tax_nasis")){
   ## USDA legacy points ----
-  tax_nasis = readRDS.gz("/mnt/diskstation/data/Soil_points/USA/NASIS_PNTS/nasis_tax_sites.rds")
+  tax_nasis = readRDS.gz(paste0(drv, "USA/NASIS_PNTS/nasis_tax_sites.rds"))
   tax_nasis = plyr::rename(tax_nasis, c("x_std"="longitude_decimal_degrees", "y_std"="latitude_decimal_degrees", "obsdate"="site_obsdate"))
   tax_nasis$source_db = "USDA_NASIS"
   tax_nasis$site_key = paste0("NASIS.", tax_nasis$peiid)
@@ -141,7 +142,7 @@ str(tax_nasis)
 
 ```{r}
 if(!exists("ncss.site")){
-  ncss.site <- read.table("/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/ncss_labdata_locations.csv.gz", fill = TRUE, header = TRUE, sep=",")
+  ncss.site <- read.table(paste0(drv, "INT/USDA_NCSS/ncss_labdata_locations.csv.gz"), fill = TRUE, header = TRUE, sep=",")
   #str(ncss.site)
   ncss.site = plyr::rename(ncss.site, c("corr_taxsubgrp"="taxsubgrp"))
   ncss.site$source_db = "USDA_NCSS"
@@ -156,7 +157,7 @@ dim(ncss.site)
 
 ```{r}
 if(!exists("tax_wosis")){
-  tax_wosis = readr::read_tsv(gzfile('/mnt/diskstation/data/Soil_points/INT/WoSIS/WoSIS_2023_December/wosis_202312_profiles.tsv.gz'), col_types='icciccddcccccciccccicccci')
+  tax_wosis = readr::read_tsv(gzfile(paste0(drv, 'INT/WoSIS/WoSIS_2023_December/wosis_202312_profiles.tsv.gz')), col_types='icciccddcccccciccccicccci')
   tax_wosis = plyr::rename(tax_wosis, c("longitude"="longitude_decimal_degrees", "latitude"="latitude_decimal_degrees", "dataset_code"="source_db"))
   tax_wosis = tax_wosis[!is.na(tax_wosis$usda_great_group),]
   tax_wosis$taxsubgrp = tolower(paste(tax_wosis$usda_subgroup, tax_wosis$usda_great_group))
@@ -210,15 +211,15 @@ previous sections:
 
 ```{r}
 if(!exists("tax_spropsA")){
-  tax_sprops0 = as.data.frame( rbind(data.table(readRDS.gz("/mnt/diskstation/data/Soil_points/sol_chem.pnts_horizons.rds")),
-                                     data.table(readRDS.gz("/mnt/diskstation/data/Soil_points/sol_chem.pnts_horizons_TMP.rds")), fill=TRUE, ignore.attr=TRUE))
+  tax_sprops0 = as.data.frame( rbind(data.table(readRDS.gz(paste0(drv, "sol_chem.pnts_horizons.rds"))),
+                                     data.table(readRDS.gz(paste0(drv, "sol_chem.pnts_horizons_TMP.rds"))), fill=TRUE, ignore.attr=TRUE))
   tax_sprops0 = tax_sprops0[!tax_sprops0$source_db=="USDA_NCSS" & !(tax_sprops0$SSL_classification_name %in% c("", "NA / NA", "#N/A / #N/A", " / ")),]
   tax_sprops0$year = substr(tax_sprops0$site_obsdate, 1, 4)
   tax_sprops0 = tax_sprops0[!duplicated(tax_sprops0$olc_id),]
   tax_sprops0$SSL_classification_name = tolower(tax_sprops0$SSL_classification_name)
   tax_sprops0 = tax_sprops0[!is.na(tax_sprops0$SSL_classification_name),]
-  #dim(tax_sprops0)
-  ## 35437    45
+  dim(tax_sprops0)
+  ## 38441    45
   #summary(as.factor(tax_sprops0$source_db))
   #str(tax_sprops0$SSL_classification_name)
   tax_c1 = sapply(tax_sprops0$SSL_classification_name, function(i){strsplit(i, " / ")[[1]][1]})
@@ -230,7 +231,7 @@ if(!exists("tax_spropsA")){
 str(tax_spropsA)
 ```
 
-This gives us additional 71k points with soil classification name. These points 
+This gives us additional 77k points with soil classification name. These points 
 need to be cleaned up to match exactly the previously produced legend. Because 
 fuzzy matching can be computational as the algorithm looks for N classes in M rows, 
 we run this matching in parallel:
@@ -241,12 +242,11 @@ tax_spropsA.lst = parallel::mclapply(levels, function(i){match_tax(i, tax_sprops
 tax_spropsV = do.call(rbind, tax_spropsA.lst)
 ## Add missing "S" on the end:
 ## "paleustollic chromustert" -> "paleustollic chromusterts"
-tax_spropsV$taxsubgrp = unlist(parallel::mclapply(tax_spropsV$taxsubgrp, add_s, mc.cores = 32))
+tax_spropsV$taxsubgrp = unlist(parallel::mclapply(tax_spropsV$taxsubgrp, add_s, mc.cores = 30))
 str(tax_spropsV)
-
 ```
 
-this shows that only 25k have an actually matching soil type that we can use.
+this shows that only 28k have an actually matching soil type that we can use.
 
 ## Final bind
 
@@ -256,18 +256,18 @@ matching our target legend:
 ```{r}
 tax_allT = do.call(rbind, list(tax_all, tax_spropsV[,sel.tax.vars]))
 str(tax_allT)
-## 403662 obs. of  7 variables
+## 407296 obs. of  7 variables
 ## we do need duplicates as some translations lead to 2-3 classes
 #tax_allT = tax_allT[!duplicated(tax_allT$olc_id),]
 ## remove all points with exactly the same TAX and olc_id
 dup = duplicated(gsub(" ", "_", paste(tax_allT$olc_id, tax_allT$taxsubgrp, sep=" ")))
-summary(dup) ## 47662 complete duplicates
+summary(dup) ## 47786 complete duplicates
 tax_allT = tax_allT[!dup,]
 #summary(as.factor(tax_allT$source_db))
 ## use only points from the target legend:
 tax_allT0 = tax_allT[which(tax_allT$taxsubgrp %in% levels),]
 str(tax_allT0)
-#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20250204.csv.gz"))
+#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20250330.csv.gz"))
 #writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)
 ```
 
@@ -278,7 +278,7 @@ We can plot the density of points in Goode Homolosize Interupted projection so t
 areas are shown realistically:
 
 ```{r, eval=FALSE}
-g1 = terra::vect("/mnt/diskstation/data/Soil_points/tiles_GH_100km_land.gpkg")
+g1 = terra::vect(paste0(drv, "tiles_GH_100km_land.gpkg"))
 ovt.g1 = terra::extract(g1["ID"], terra::project(terra::vect(tax_allT, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), crs(g1)))
 g1t.c = summary(as.factor(ovt.g1$ID), maxsum = length(levels(as.factor(ovt.g1$ID))))
 g1t.df = data.frame(count=g1t.c, ID=attr(g1t.c, "names"))
@@ -295,5 +295,5 @@ knitr::include_graphics("img/fig_density_training_tax.pnts.png")
 Save temp object:
 
 ```{r, eval=FALSE}
-save.image.pigz(file="soilusda.RData")
+save.image.pigz(file="soilusda.RData", n.cores = 30)
 ```

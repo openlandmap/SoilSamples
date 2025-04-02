@@ -379,7 +379,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_nasis"</span>)){</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="do">## USDA legacy points ----</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  tax_nasis <span class="ot">=</span> <span class="fu">readRDS.gz</span>(<span class="st">"/mnt/diskstation/data/Soil_points/USA/NASIS_PNTS/nasis_tax_sites.rds"</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  tax_nasis <span class="ot">=</span> <span class="fu">readRDS.gz</span>(<span class="fu">paste0</span>(drv, <span class="st">"USA/NASIS_PNTS/nasis_tax_sites.rds"</span>))</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  tax_nasis <span class="ot">=</span> plyr<span class="sc">::</span><span class="fu">rename</span>(tax_nasis, <span class="fu">c</span>(<span class="st">"x_std"</span><span class="ot">=</span><span class="st">"longitude_decimal_degrees"</span>, <span class="st">"y_std"</span><span class="ot">=</span><span class="st">"latitude_decimal_degrees"</span>, <span class="st">"obsdate"</span><span class="ot">=</span><span class="st">"site_obsdate"</span>))</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  tax_nasis<span class="sc">$</span>source_db <span class="ot">=</span> <span class="st">"USDA_NASIS"</span></span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  tax_nasis<span class="sc">$</span>site_key <span class="ot">=</span> <span class="fu">paste0</span>(<span class="st">"NASIS."</span>, tax_nasis<span class="sc">$</span>peiid)</span>
@@ -403,7 +403,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"ncss.site"</span>)){</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  ncss.site <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="st">"/mnt/diskstation/data/Soil_points/INT/USDA_NCSS/ncss_labdata_locations.csv.gz"</span>, <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep=</span><span class="st">","</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  ncss.site <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="fu">paste0</span>(drv, <span class="st">"INT/USDA_NCSS/ncss_labdata_locations.csv.gz"</span>), <span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep=</span><span class="st">","</span>)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#str(ncss.site)</span></span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  ncss.site <span class="ot">=</span> plyr<span class="sc">::</span><span class="fu">rename</span>(ncss.site, <span class="fu">c</span>(<span class="st">"corr_taxsubgrp"</span><span class="ot">=</span><span class="st">"taxsubgrp"</span>))</span>
 <span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  ncss.site<span class="sc">$</span>source_db <span class="ot">=</span> <span class="st">"USDA_NCSS"</span></span>
@@ -420,7 +420,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_wosis"</span>)){</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  tax_wosis <span class="ot">=</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">gzfile</span>(<span class="st">'/mnt/diskstation/data/Soil_points/INT/WoSIS/WoSIS_2023_December/wosis_202312_profiles.tsv.gz'</span>), <span class="at">col_types=</span><span class="st">'icciccddcccccciccccicccci'</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  tax_wosis <span class="ot">=</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">gzfile</span>(<span class="fu">paste0</span>(drv, <span class="st">'INT/WoSIS/WoSIS_2023_December/wosis_202312_profiles.tsv.gz'</span>)), <span class="at">col_types=</span><span class="st">'icciccddcccccciccccicccci'</span>)</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  tax_wosis <span class="ot">=</span> plyr<span class="sc">::</span><span class="fu">rename</span>(tax_wosis, <span class="fu">c</span>(<span class="st">"longitude"</span><span class="ot">=</span><span class="st">"longitude_decimal_degrees"</span>, <span class="st">"latitude"</span><span class="ot">=</span><span class="st">"latitude_decimal_degrees"</span>, <span class="st">"dataset_code"</span><span class="ot">=</span><span class="st">"source_db"</span>))</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  tax_wosis <span class="ot">=</span> tax_wosis[<span class="sc">!</span><span class="fu">is.na</span>(tax_wosis<span class="sc">$</span>usda_great_group),]</span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  tax_wosis<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">tolower</span>(<span class="fu">paste</span>(tax_wosis<span class="sc">$</span>usda_subgroup, tax_wosis<span class="sc">$</span>usda_great_group))</span>
@@ -566,15 +566,15 @@ oxyaquic vertic argiudolls                    (Other)
 <p>Next, we would also like to add points from national and regional soil profiles that are not listed above and that could help increase representation of points geographically. For this we use the previously compiled soil data described in the previous sections:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_spropsA"</span>)){</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> <span class="fu">as.data.frame</span>( <span class="fu">rbind</span>(<span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="st">"/mnt/diskstation/data/Soil_points/sol_chem.pnts_horizons.rds"</span>)),</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="st">"/mnt/diskstation/data/Soil_points/sol_chem.pnts_horizons_TMP.rds"</span>)), <span class="at">fill=</span><span class="cn">TRUE</span>, <span class="at">ignore.attr=</span><span class="cn">TRUE</span>))</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> <span class="fu">as.data.frame</span>( <span class="fu">rbind</span>(<span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="fu">paste0</span>(drv, <span class="st">"sol_chem.pnts_horizons.rds"</span>))),</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="fu">paste0</span>(drv, <span class="st">"sol_chem.pnts_horizons_TMP.rds"</span>))), <span class="at">fill=</span><span class="cn">TRUE</span>, <span class="at">ignore.attr=</span><span class="cn">TRUE</span>))</span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span>tax_sprops0<span class="sc">$</span>source_db<span class="sc">==</span><span class="st">"USDA_NCSS"</span> <span class="sc">&amp;</span> <span class="sc">!</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA / NA"</span>, <span class="st">"#N/A / #N/A"</span>, <span class="st">" / "</span>)),]</span>
 <span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  tax_sprops0<span class="sc">$</span>year <span class="ot">=</span> <span class="fu">substr</span>(tax_sprops0<span class="sc">$</span>site_obsdate, <span class="dv">1</span>, <span class="dv">4</span>)</span>
 <span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span><span class="fu">duplicated</span>(tax_sprops0<span class="sc">$</span>olc_id),]</span>
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  tax_sprops0<span class="sc">$</span>SSL_classification_name <span class="ot">=</span> <span class="fu">tolower</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name)</span>
 <span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span><span class="fu">is.na</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name),]</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="co">#dim(tax_sprops0)</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="do">## 35437    45</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dim</span>(tax_sprops0)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="do">## 38441    45</span></span>
 <span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">#summary(as.factor(tax_sprops0$source_db))</span></span>
 <span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">#str(tax_sprops0$SSL_classification_name)</span></span>
 <span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  tax_c1 <span class="ot">=</span> <span class="fu">sapply</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name, <span class="cf">function</span>(i){<span class="fu">strsplit</span>(i, <span class="st">" / "</span>)[[<span class="dv">1</span>]][<span class="dv">1</span>]})</span>
@@ -585,7 +585,7 @@ oxyaquic vertic argiudolls                    (Other)
 <span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   70874 obs. of  7 variables:
+<pre><code>'data.frame':   76882 obs. of  7 variables:
  $ site_key                 : chr  "15" "17" "18" "19" ...
  $ olc_id                   : chr  "9F6FRM8J+J62" "9F6CPWCV+9M9" "9F6FP2XH+P9C" "9F6FQ52P+RHW" ...
  $ year                     : chr  "2016" "2016" "2015" "2016" ...
@@ -595,17 +595,17 @@ oxyaquic vertic argiudolls                    (Other)
  $ SSL_classification_name  : chr  "typic argiudoll" "aeric tropaquept" "humaquept" "humaquept" ...</code></pre>
 </div>
 </div>
-<p>This gives us additional 71k points with soil classification name. These points need to be cleaned up to match exactly the previously produced legend. Because fuzzy matching can be computational as the algorithm looks for N classes in M rows, we run this matching in parallel:</p>
+<p>This gives us additional 77k points with soil classification name. These points need to be cleaned up to match exactly the previously produced legend. Because fuzzy matching can be computational as the algorithm looks for N classes in M rows, we run this matching in parallel:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(parallel)</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>tax_spropsA.lst <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(levels, <span class="cf">function</span>(i){<span class="fu">match_tax</span>(i, tax_spropsA)}, <span class="at">mc.cores=</span><span class="dv">30</span>)</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>tax_spropsV <span class="ot">=</span> <span class="fu">do.call</span>(rbind, tax_spropsA.lst)</span>
 <span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Add missing "S" on the end:</span></span>
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="do">## "paleustollic chromustert" -&gt; "paleustollic chromusterts"</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>tax_spropsV<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">unlist</span>(parallel<span class="sc">::</span><span class="fu">mclapply</span>(tax_spropsV<span class="sc">$</span>taxsubgrp, add_s, <span class="at">mc.cores =</span> <span class="dv">32</span>))</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>tax_spropsV<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">unlist</span>(parallel<span class="sc">::</span><span class="fu">mclapply</span>(tax_spropsV<span class="sc">$</span>taxsubgrp, add_s, <span class="at">mc.cores =</span> <span class="dv">30</span>))</span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsV)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   24869 obs. of  8 variables:
+<pre><code>'data.frame':   28503 obs. of  8 variables:
  $ site_key                 : chr  "67" "75" "91" "114" ...
  $ olc_id                   : chr  "9F6GC5XP+856" "9F6M9JCF+J75" "9F6J9Q4H+GM2" "9F6G7RV2+PW5" ...
  $ year                     : chr  "2016" "2014" "2014" "2016" ...
@@ -616,7 +616,7 @@ oxyaquic vertic argiudolls                    (Other)
  $ taxsubgrp                : chr  "typic hapludalfs" "typic hapludalfs" "typic hapludalfs" "typic hapludalfs" ...</code></pre>
 </div>
 </div>
-<p>this shows that only 25k have an actually matching soil type that we can use.</p>
+<p>this shows that only 28k have an actually matching soil type that we can use.</p>
 </section>
 <section id="final-bind" class="level2">
 <h2 class="anchored" data-anchor-id="final-bind">Final bind</h2>
@@ -625,7 +625,7 @@ oxyaquic vertic argiudolls                    (Other)
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(tax_all, tax_spropsV[,sel.tax.vars]))</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   403662 obs. of  7 variables:
+<pre><code>'data.frame':   407296 obs. of  7 variables:
  $ site_key                 : chr  "NASIS.115624" "NASIS.115623" "NASIS.9914" "NASIS.9948" ...
  $ olc_id                   : chr  "85V4PQC2+G3V" "85V4QW49+6PQ" "84PRGC6X+2JP" "84PRCCV7+MXV" ...
  $ year                     : chr  "2000" "2000" "2000" "2000" ...
@@ -634,15 +634,15 @@ oxyaquic vertic argiudolls                    (Other)
  $ latitude_decimal_degrees : num  47.7 47.8 44.5 44.4 47.2 ...
  $ taxsubgrp                : chr  "xeric argialbolls" "aquandic humaquepts" "pachic fulvicryands" "lithic hapludands" ...</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 403662 obs. of  7 variables</span></span>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 407296 obs. of  7 variables</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="do">## we do need duplicates as some translations lead to 2-3 classes</span></span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co">#tax_allT = tax_allT[!duplicated(tax_allT$olc_id),]</span></span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="do">## remove all points with exactly the same TAX and olc_id</span></span>
 <span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>dup <span class="ot">=</span> <span class="fu">duplicated</span>(<span class="fu">gsub</span>(<span class="st">" "</span>, <span class="st">"_"</span>, <span class="fu">paste</span>(tax_allT<span class="sc">$</span>olc_id, tax_allT<span class="sc">$</span>taxsubgrp, <span class="at">sep=</span><span class="st">" "</span>)))</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dup) <span class="do">## 47662 complete duplicates</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dup) <span class="do">## 47786 complete duplicates</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   Mode   FALSE    TRUE 
-logical  356000   47662 </code></pre>
+logical  359510   47786 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> tax_allT[<span class="sc">!</span>dup,]</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(as.factor(tax_allT$source_db))</span></span>
@@ -650,7 +650,7 @@ logical  356000   47662 </code></pre>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>tax_allT0 <span class="ot">=</span> tax_allT[<span class="fu">which</span>(tax_allT<span class="sc">$</span>taxsubgrp <span class="sc">%in%</span> levels),]</span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   334761 obs. of  7 variables:
+<pre><code>'data.frame':   338271 obs. of  7 variables:
  $ site_key                 : chr  "NASIS.275760" "NASIS.9655" "NASIS.9669" "NASIS.9730" ...
  $ olc_id                   : chr  "85V565W5+4Q8" "84QRQJP7+9P8" "84QRFHF7+WX6" "84QRMJ24+MPW" ...
  $ year                     : chr  "2000" "2000" "2000" "2000" ...
@@ -659,13 +659,13 @@ logical  356000   47662 </code></pre>
  $ latitude_decimal_degrees : num  47.2 45.8 45.5 45.7 44.4 ...
  $ taxsubgrp                : chr  "vitrandic haploxerolls" "dystric eutrudepts" "andic dystrudepts" "humic dystrudepts" ...</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20250204.csv.gz"))</span></span>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20250330.csv.gz"))</span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co">#writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Note, we removed some duplicates as many data sets are compilations so some points appear in multiple data sets.</p>
 <p>We can plot the density of points in Goode Homolosize Interupted projection so that areas are shown realistically:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>g1 <span class="ot">=</span> terra<span class="sc">::</span><span class="fu">vect</span>(<span class="st">"/mnt/diskstation/data/Soil_points/tiles_GH_100km_land.gpkg"</span>)</span>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>g1 <span class="ot">=</span> terra<span class="sc">::</span><span class="fu">vect</span>(<span class="fu">paste0</span>(drv, <span class="st">"tiles_GH_100km_land.gpkg"</span>))</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>ovt.g1 <span class="ot">=</span> terra<span class="sc">::</span><span class="fu">extract</span>(g1[<span class="st">"ID"</span>], terra<span class="sc">::</span><span class="fu">project</span>(terra<span class="sc">::</span><span class="fu">vect</span>(tax_allT, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"longitude_decimal_degrees"</span>, <span class="st">"latitude_decimal_degrees"</span>), <span class="at">crs=</span><span class="st">"EPSG:4326"</span>), <span class="fu">crs</span>(g1)))</span>
 <span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>g1t.c <span class="ot">=</span> <span class="fu">summary</span>(<span class="fu">as.factor</span>(ovt.g1<span class="sc">$</span>ID), <span class="at">maxsum =</span> <span class="fu">length</span>(<span class="fu">levels</span>(<span class="fu">as.factor</span>(ovt.g1<span class="sc">$</span>ID))))</span>
 <span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>g1t.df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">count=</span>g1t.c, <span class="at">ID=</span><span class="fu">attr</span>(g1t.c, <span class="st">"names"</span>))</span>
@@ -685,7 +685,7 @@ logical  356000   47662 </code></pre>
 </div>
 <p>Save temp object:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">save.image.pigz</span>(<span class="at">file=</span><span class="st">"soilusda.RData"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">save.image.pigz</span>(<span class="at">file=</span><span class="st">"soilusda.RData"</span>, <span class="at">n.cores =</span> <span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 
@@ -1228,7 +1228,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <footer class="footer">
   <div class="nav-footer">
     <div class="nav-footer-left">
-<p>© 2024, OpenGeoHub foundation</p>
+<p>© 2025, OpenGeoHub foundation</p>
 </div>   
     <div class="nav-footer-center">
       &nbsp;
