@@ -178,3 +178,12 @@ transvalues = function(df, out.name, in.name, fun.lst){
   names(out) = out.name
   return(out)
 }
+
+add_s = function(x){
+  y = c("*and$", "*bel$", "*tel$", "*hel$", "*uod$", "*yod$", "*hod$", "*mod$", "*ent$", "*ert$", "*ept$", "*ult$", "*cid$", "*bid$", "*lid$", "*gid$", "*hid$", "*rid$", "*sid$", "*alf$", "*oll$", "*ist$", "*sol$", "*ak$", "*zem$")
+  s = sapply(y, function(i){grep(i, x)})
+  if(sum(unlist(s))>0){
+    x = paste0(x, "s")
+  }
+  x
+}

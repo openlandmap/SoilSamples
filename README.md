@@ -26,6 +26,24 @@ To cite these maps please use:
 }
 ```
 
+Peer-reviewed publication explaining all processing steps:
+
+```
+@Article{essd-18-989-2026,
+AUTHOR = {Hengl, T. and Consoli, D. and Tian, X. and Nauman, T. W. and Nussbaum, M. and Isik, M. S. and Parente, L. and Ho, Y.-F. and Simoes, R. and Gupta, S. and Samuel-Rosa, A. and Zborowski Horst, T. and Safanelli, J. L. and Harris, N.},
+TITLE = {OpenLandMap-soildb: global soil information at 30m spatial resolution for 2000--2022$+$ based on spatiotemporal Machine Learning and harmonized legacy soil samples and observations},
+JOURNAL = {Earth System Science Data},
+VOLUME = {18},
+YEAR = {2026},
+NUMBER = {2},
+PAGES = {989--1036},
+URL = {https://essd.copernicus.org/articles/18/989/2026/},
+DOI = {10.5194/essd-18-989-2026}
+}
+```
+
+To visualize global predictions of dynamic soil properties use: <https://world.soils.app>
+
 To download the most up-to-date snapshot of all publicly available soil points 
 bind and compiled as GeoPKG, please visit: [https://github.com/openlandmap/SoilSamples/](https://github.com/openlandmap/SoilSamples/tree/main/out).
 

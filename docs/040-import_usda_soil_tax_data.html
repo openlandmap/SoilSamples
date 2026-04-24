@@ -105,7 +105,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <meta property="og:title" content="An open compendium of global soil samples and observations">
-<meta property="og:description" content="This is a public compendium of global, regional, national and sub-national soil samples and/or soil profile datasets (points with Observations and Measurements of soil properties and characteristics). Data sets listed here, assuming compatible open license, are afterwards imported into a common library. Contributions are welcome. To discuss issues or report a bug please use the repository homepage. If you have an addition or correction, make changes to the Rmd’s and make pull-request.">
+<meta property="og:description" content="OpenLandMap-soildb is a public compendium of global, regional, national and sub-national soil samples and/or soil profile datasets (points with Observations and Measurements of soil properties and characteristics). Data sets listed here, assuming compatible open license, are afterwards imported into a common library. Contributions are welcome. To discuss issues or report a bug please use the repository homepage. If you have an addition or correction, make changes to the Rmd’s and make pull-request.">
 <meta property="og:site_name" content="An open compendium of global soil samples and observations">
 <meta name="twitter:title" content="An open compendium of global soil samples and observations">
 <meta name="twitter:image" content="img/sol_chem.pnts_sites.png">
@@ -158,12 +158,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label=""><i class="bi bi-github"></i></a>
       <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quarto-navigation-tool-dropdown-0">
           <li>
-            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/OpenGeoHub/SoilSamples">
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/OpenLandMap/SoilSamples">
             Source Code
             </a>
           </li>
           <li>
-            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/OpenGeoHub/SoilSamples/issues">
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/OpenLandMap/SoilSamples/issues">
             Report a Bug
             </a>
           </li>
@@ -207,7 +207,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">About</span></a>
+ <span class="menu-text">About OpenLandMap-soildb</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -277,7 +277,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#final-bind" id="toc-final-bind" class="nav-link" data-scroll-target="#final-bind">Final bind</a></li>
   </ul></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/OpenGeoHub/SoilSamples/edit/main/040-import_usda_soil_tax_data.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/OpenGeoHub/SoilSamples/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/OpenLandMap/SoilSamples/edit/main/040-import_usda_soil_tax_data.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/OpenLandMap/SoilSamples/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -585,7 +585,7 @@ oxyaquic vertic argiudolls                    (Other)
 <span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   76882 obs. of  7 variables:
+<pre><code>'data.frame':   82016 obs. of  7 variables:
  $ site_key                 : chr  "15" "17" "18" "19" ...
  $ olc_id                   : chr  "9F6FRM8J+J62" "9F6CPWCV+9M9" "9F6FP2XH+P9C" "9F6FQ52P+RHW" ...
  $ year                     : chr  "2016" "2016" "2015" "2016" ...
@@ -605,7 +605,7 @@ oxyaquic vertic argiudolls                    (Other)
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>tax_spropsV<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">unlist</span>(parallel<span class="sc">::</span><span class="fu">mclapply</span>(tax_spropsV<span class="sc">$</span>taxsubgrp, add_s, <span class="at">mc.cores =</span> <span class="dv">30</span>))</span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsV)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   28503 obs. of  8 variables:
+<pre><code>'data.frame':   28507 obs. of  8 variables:
  $ site_key                 : chr  "67" "75" "91" "114" ...
  $ olc_id                   : chr  "9F6GC5XP+856" "9F6M9JCF+J75" "9F6J9Q4H+GM2" "9F6G7RV2+PW5" ...
  $ year                     : chr  "2016" "2014" "2014" "2016" ...
@@ -625,7 +625,7 @@ oxyaquic vertic argiudolls                    (Other)
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(tax_all, tax_spropsV[,sel.tax.vars]))</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   407296 obs. of  7 variables:
+<pre><code>'data.frame':   407300 obs. of  7 variables:
  $ site_key                 : chr  "NASIS.115624" "NASIS.115623" "NASIS.9914" "NASIS.9948" ...
  $ olc_id                   : chr  "85V4PQC2+G3V" "85V4QW49+6PQ" "84PRGC6X+2JP" "84PRCCV7+MXV" ...
  $ year                     : chr  "2000" "2000" "2000" "2000" ...
@@ -634,7 +634,7 @@ oxyaquic vertic argiudolls                    (Other)
  $ latitude_decimal_degrees : num  47.7 47.8 44.5 44.4 47.2 ...
  $ taxsubgrp                : chr  "xeric argialbolls" "aquandic humaquepts" "pachic fulvicryands" "lithic hapludands" ...</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 407296 obs. of  7 variables</span></span>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 338271 obs. of  7 variables</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="do">## we do need duplicates as some translations lead to 2-3 classes</span></span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co">#tax_allT = tax_allT[!duplicated(tax_allT$olc_id),]</span></span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="do">## remove all points with exactly the same TAX and olc_id</span></span>
@@ -642,7 +642,7 @@ oxyaquic vertic argiudolls                    (Other)
 <span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dup) <span class="do">## 47786 complete duplicates</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   Mode   FALSE    TRUE 
-logical  359510   47786 </code></pre>
+logical  359494   47806 </code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> tax_allT[<span class="sc">!</span>dup,]</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(as.factor(tax_allT$source_db))</span></span>
@@ -650,7 +650,7 @@ logical  359510   47786 </code></pre>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>tax_allT0 <span class="ot">=</span> tax_allT[<span class="fu">which</span>(tax_allT<span class="sc">$</span>taxsubgrp <span class="sc">%in%</span> levels),]</span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   338271 obs. of  7 variables:
+<pre><code>'data.frame':   338255 obs. of  7 variables:
  $ site_key                 : chr  "NASIS.275760" "NASIS.9655" "NASIS.9669" "NASIS.9730" ...
  $ olc_id                   : chr  "85V565W5+4Q8" "84QRQJP7+9P8" "84QRFHF7+WX6" "84QRMJ24+MPW" ...
  $ year                     : chr  "2000" "2000" "2000" "2000" ...
@@ -659,7 +659,7 @@ logical  359510   47786 </code></pre>
  $ latitude_decimal_degrees : num  47.2 45.8 45.5 45.7 44.4 ...
  $ taxsubgrp                : chr  "vitrandic haploxerolls" "dystric eutrudepts" "andic dystrudepts" "humic dystrudepts" ...</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20250330.csv.gz"))</span></span>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20260424.csv.gz"))</span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co">#writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Note, we removed some duplicates as many data sets are compilations so some points appear in multiple data sets.</p>
@@ -1232,11 +1232,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </div>   
     <div class="nav-footer-center">
       &nbsp;
-    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/OpenGeoHub/SoilSamples/edit/main/040-import_usda_soil_tax_data.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/OpenGeoHub/SoilSamples/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/OpenLandMap/SoilSamples/edit/main/040-import_usda_soil_tax_data.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/OpenLandMap/SoilSamples/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
       <ul class="footer-items list-unstyled">
     <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/OpenGeoHub/SoilSamples">
+    <a class="nav-link" href="https://github.com/OpenLandMap/SoilSamples">
       <i class="bi bi-github" role="img">
 </i> 
     </a>

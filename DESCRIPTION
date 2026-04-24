@@ -1,6 +1,6 @@
 Package: soilsamples
 Title: An Open Compendium of Soil Datasets: Soil Observations and Measurements.
-Version: 0.2
+Version: 1.0
 Authors@R: c(
     person("Tomislav", "Hengl", , "tom.hengl@opengeohub.org", role = c("aut", "cre")),
     person("Surya", "Gupta", , "surya.gupta@unibas.ch", role = c("aut", "cre"))

@@ -256,7 +256,7 @@ matching our target legend:
 ```{r}
 tax_allT = do.call(rbind, list(tax_all, tax_spropsV[,sel.tax.vars]))
 str(tax_allT)
-## 407296 obs. of  7 variables
+## 338271 obs. of  7 variables
 ## we do need duplicates as some translations lead to 2-3 classes
 #tax_allT = tax_allT[!duplicated(tax_allT$olc_id),]
 ## remove all points with exactly the same TAX and olc_id
@@ -267,7 +267,7 @@ tax_allT = tax_allT[!dup,]
 ## use only points from the target legend:
 tax_allT0 = tax_allT[which(tax_allT$taxsubgrp %in% levels),]
 str(tax_allT0)
-#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20250330.csv.gz"))
+#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20260424.csv.gz"))
 #writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)
 ```
 
