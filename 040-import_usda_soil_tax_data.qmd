@@ -171,14 +171,44 @@ if(!exists("tax_wosis")){
 dim(tax_wosis)
 ```
 
+UK LandIS augers and profiles also contain a lot of ground data with soil types:
+
+```{r}
+if(!exists("tax_landis")){
+  tax_landis = read.csv(paste0(drv, 'UK/landis/AUGERsite_3528240497585825957.csv'), stringsAsFactors = FALSE)
+  #head(sort(table(as.factor(tax_landis$SERIES_NAME)), decreasing = TRUE), 10)
+  #   UNKNOWN BRICKFIELD   HIGHWEEK    ANDOVER       WICK    WHIMPLE      MANOD 
+  #   15591       3409       2422       2269       2264       2190       2134 
+  # CLIFTON    EVESHAM    NEWPORT 
+  #    1996       1961       1869
+  tax_landis$SERIES_NAME = ifelse(tax_landis$SERIES_NAME=="HIGHWEEK", "DENBIGH", tax_landis$SERIES_NAME)
+  ## convert to lon-lat coordinates
+  landis.coords = as.data.frame(geom(terra::project(terra::vect(tax_landis[,c("EASTING","NORTHING")], geom=c("EASTING","NORTHING"), crs="EPSG:27700"), "EPSG:4326"))[,c("x","y")])
+  tax_landis$longitude_decimal_degrees = landis.coords$x
+  tax_landis$latitude_decimal_degrees = landis.coords$y
+  cor.landis = read.csv('correlation/UK_landis_correlation.csv')
+  tax_landis$taxsubgrp = tolower(plyr::join(tax_landis, cor.landis, match = "first")$USDA_correlation)
+  tax_landis$source_db = "UK LandIS"
+  tax_landis$site_key = paste0("LandIS.", tax_landis$AUGERID)
+  tax_landis$site_obsdate = format(as.Date(tax_landis$SURVEY_DATE, format="%m/%d/%Y"), "%Y-%m-%d")
+  tax_landis$year = as.numeric(substr(tax_landis$site_obsdate, 1, 4))
+  tax_landis$olc_id = olctools::encode_olc(tax_landis$latitude_decimal_degrees, tax_landis$longitude_decimal_degrees, 11)
+  tax_landis = tax_landis[,sel.tax.vars]
+  tax_landis = tax_landis[!is.na(tax_landis$taxsubgrp) & !is.na(tax_landis$longitude_decimal_degrees),]
+  #summary(as.factor(tax_landis$taxsubgrp))
+}
+dim(tax_landis)
+## [1] 104704      7
+```
+
 Next, we can bind the 3 data sets to produce 1 consistent legend with finite number 
 of classes and names strictly standardized. We also add "s" to fix typos etc.
 
 ```{r}
 if(!exists("tax_all")){
-  tax_all = do.call(rbind, list(tax_nasis, tax_wosis, ncss.site))
+  tax_all = do.call(rbind, list(tax_nasis, tax_wosis, ncss.site, tax_landis))
   #str(tax_all)
-  ## 378793 obs. of  7 variables
+  ## 483497 obs. of  7 variables
   ## add missing "s"
   #tax_all$taxsubgrp = sapply(tax_all$taxsubgrp, add_s)
   tax_all$taxsubgrp = unlist(parallel::mclapply(tax_all$taxsubgrp, add_s, mc.cores = 32))
@@ -196,7 +226,7 @@ classes that have at least 30 observations, which gives a total of 818 classes.
 tax.sm = summary(as.factor(tax_all$taxsubgrp), maxsum = 820)
 tax.s = as.data.frame(tax.sm)
 levels = attr(tax.sm, "names")[1:818]
-#write.csv(tax.s, "tax_taxsubgrp_summary.csv")
+write.csv(tax.s, "correlation/tax_taxsubgrp_summary.csv")
 ```
 
 It is important for further spatial analysis that the number of classes is finite and 
@@ -219,7 +249,7 @@ if(!exists("tax_spropsA")){
   tax_sprops0$SSL_classification_name = tolower(tax_sprops0$SSL_classification_name)
   tax_sprops0 = tax_sprops0[!is.na(tax_sprops0$SSL_classification_name),]
   dim(tax_sprops0)
-  ## 38441    45
+  ## 41067    46
   #summary(as.factor(tax_sprops0$source_db))
   #str(tax_sprops0$SSL_classification_name)
   tax_c1 = sapply(tax_sprops0$SSL_classification_name, function(i){strsplit(i, " / ")[[1]][1]})
@@ -231,7 +261,7 @@ if(!exists("tax_spropsA")){
 str(tax_spropsA)
 ```
 
-This gives us additional 77k points with soil classification name. These points 
+This gives us additional 100k points with soil classification name. These points 
 need to be cleaned up to match exactly the previously produced legend. Because 
 fuzzy matching can be computational as the algorithm looks for N classes in M rows, 
 we run this matching in parallel:
@@ -246,7 +276,7 @@ tax_spropsV$taxsubgrp = unlist(parallel::mclapply(tax_spropsV$taxsubgrp, add_s, 
 str(tax_spropsV)
 ```
 
-this shows that only 28k have an actually matching soil type that we can use.
+this shows that only 34k have an actually matching soil type that we can use.
 
 ## Final bind
 
@@ -256,19 +286,19 @@ matching our target legend:
 ```{r}
 tax_allT = do.call(rbind, list(tax_all, tax_spropsV[,sel.tax.vars]))
 str(tax_allT)
-## 338271 obs. of  7 variables
+## 510849 obs. of  7 variables
 ## we do need duplicates as some translations lead to 2-3 classes
 #tax_allT = tax_allT[!duplicated(tax_allT$olc_id),]
 ## remove all points with exactly the same TAX and olc_id
 dup = duplicated(gsub(" ", "_", paste(tax_allT$olc_id, tax_allT$taxsubgrp, sep=" ")))
-summary(dup) ## 47786 complete duplicates
+summary(dup) ## 47811 complete duplicates
 tax_allT = tax_allT[!dup,]
 #summary(as.factor(tax_allT$source_db))
 ## use only points from the target legend:
 tax_allT0 = tax_allT[which(tax_allT$taxsubgrp %in% levels),]
 str(tax_allT0)
-#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20260424.csv.gz"))
-#writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)
+#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20260506.csv.gz"))
+#writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "/data/wri_soil/taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)
 ```
 
 Note, we removed some duplicates as many data sets are compilations so some points 
@@ -284,13 +314,24 @@ g1t.c = summary(as.factor(ovt.g1$ID), maxsum = length(levels(as.factor(ovt.g1$ID
 g1t.df = data.frame(count=g1t.c, ID=attr(g1t.c, "names"))
 g1$count = dplyr::left_join(data.frame(ID=g1$ID), g1t.df)$count
 #plot(g1["count"])
-#writeVector(g1["count"], "/data/dev/tiles_GH_100km_tax.dens.gpkg", overwrite=TRUE)
+writeVector(g1["count"], "/data/dev/tiles_GH_100km_tax.dens.gpkg", overwrite=TRUE)
 ```
 
 
 ```{r IGH-tax.density, echo=FALSE, fig.cap="Density of points with soil taxonomy class based on 100 by 100 km blocks in IGH projection.", out.width="100%"}
 knitr::include_graphics("img/fig_density_training_tax.pnts.png")
 ```
+
+Distribution of training points considering soil orders is:
+
+```{r}
+usda_stats = read.csv("./correlation/TAXSUSDA_stats.csv")
+usda_tax$Great_Group = tolower(usda_tax$Great_Group)
+usda_stats$Order = dplyr::left_join(usda_stats, usda_tax, by="Great_Group")$Order
+o.lst = dplyr::left_join(tax_allT["taxsubgrp"], usda_stats, by=join_by(taxsubgrp==USDA.subgroup))$Order
+summary(as.factor(o.lst))
+```
+
 
 Save temp object:
 

@@ -173,14 +173,14 @@ Umbrorthels,Orthels,Gelisols,Gelisols_Orthels_Umbrorthels,0
 Anhyturbels,Turbels,Gelisols,Gelisols_Turbels_Anhyturbels,0
 Aquiturbels,Turbels,Gelisols,Gelisols_Turbels_Aquiturbels,0
 Haploturbels,Turbels,Gelisols,Gelisols_Turbels_Haploturbels,0
-Histoturbels,Turbels,Gelisols,Gelisols_Turbels_Histoturbels,0
+Histoturbels,Turbels,Gelisols,Gelisols_Turbels_Histoturbels,1
 Molliturbels,Turbels,Gelisols,Gelisols_Turbels_Molliturbels,0
 Psammoturbels,Turbels,Gelisols,Gelisols_Turbels_Psammoturbels,0
 Umbriturbels,Turbels,Gelisols,Gelisols_Turbels_Umbriturbels,0
 Borofibrists,Fibrists,Histosols,Histosols_Fibrists_Borofibrists,1
 Cryofibrists,Fibrists,Histosols,Histosols_Fibrists_Cryofibrists,1
 Haplofibrists,Fibrists,Histosols,Histosols_Fibrists_Haplofibrists,1
-Sphagnofibrists,Fibrists,1,Histosols_Fibrists_Sphagnofibrists,1
+Sphagnofibrists,Fibrists,Histosols,Histosols_Fibrists_Sphagnofibrists,1
 Borofolists,Folists,Histosols,Histosols_Folists_Borofolists,1
 Cryofolists,Folists,Histosols,Histosols_Folists_Cryofolists,1
 Torrifolists,Folists,Histosols,Histosols_Folists_Torrifolists,1

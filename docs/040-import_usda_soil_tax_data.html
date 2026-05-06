@@ -436,69 +436,115 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>[1] 30998     7</code></pre>
 </div>
 </div>
+<p>UK LandIS augers and profiles also contain a lot of ground data with soil types:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_landis"</span>)){</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  tax_landis <span class="ot">=</span> <span class="fu">read.csv</span>(<span class="fu">paste0</span>(drv, <span class="st">'UK/landis/AUGERsite_3528240497585825957.csv'</span>), <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#head(sort(table(as.factor(tax_landis$SERIES_NAME)), decreasing = TRUE), 10)</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   UNKNOWN BRICKFIELD   HIGHWEEK    ANDOVER       WICK    WHIMPLE      MANOD </span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   15591       3409       2422       2269       2264       2190       2134 </span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># CLIFTON    EVESHAM    NEWPORT </span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">#    1996       1961       1869</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>SERIES_NAME <span class="ot">=</span> <span class="fu">ifelse</span>(tax_landis<span class="sc">$</span>SERIES_NAME<span class="sc">==</span><span class="st">"HIGHWEEK"</span>, <span class="st">"DENBIGH"</span>, tax_landis<span class="sc">$</span>SERIES_NAME)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="do">## convert to lon-lat coordinates</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  landis.coords <span class="ot">=</span> <span class="fu">as.data.frame</span>(<span class="fu">geom</span>(terra<span class="sc">::</span><span class="fu">project</span>(terra<span class="sc">::</span><span class="fu">vect</span>(tax_landis[,<span class="fu">c</span>(<span class="st">"EASTING"</span>,<span class="st">"NORTHING"</span>)], <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"EASTING"</span>,<span class="st">"NORTHING"</span>), <span class="at">crs=</span><span class="st">"EPSG:27700"</span>), <span class="st">"EPSG:4326"</span>))[,<span class="fu">c</span>(<span class="st">"x"</span>,<span class="st">"y"</span>)])</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>longitude_decimal_degrees <span class="ot">=</span> landis.coords<span class="sc">$</span>x</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>latitude_decimal_degrees <span class="ot">=</span> landis.coords<span class="sc">$</span>y</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  cor.landis <span class="ot">=</span> <span class="fu">read.csv</span>(<span class="st">'correlation/UK_landis_correlation.csv'</span>)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">tolower</span>(plyr<span class="sc">::</span><span class="fu">join</span>(tax_landis, cor.landis, <span class="at">match =</span> <span class="st">"first"</span>)<span class="sc">$</span>USDA_correlation)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>source_db <span class="ot">=</span> <span class="st">"UK LandIS"</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>site_key <span class="ot">=</span> <span class="fu">paste0</span>(<span class="st">"LandIS."</span>, tax_landis<span class="sc">$</span>AUGERID)</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>site_obsdate <span class="ot">=</span> <span class="fu">format</span>(<span class="fu">as.Date</span>(tax_landis<span class="sc">$</span>SURVEY_DATE, <span class="at">format=</span><span class="st">"%m/%d/%Y"</span>), <span class="st">"%Y-%m-%d"</span>)</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>year <span class="ot">=</span> <span class="fu">as.numeric</span>(<span class="fu">substr</span>(tax_landis<span class="sc">$</span>site_obsdate, <span class="dv">1</span>, <span class="dv">4</span>))</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>  tax_landis<span class="sc">$</span>olc_id <span class="ot">=</span> olctools<span class="sc">::</span><span class="fu">encode_olc</span>(tax_landis<span class="sc">$</span>latitude_decimal_degrees, tax_landis<span class="sc">$</span>longitude_decimal_degrees, <span class="dv">11</span>)</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>  tax_landis <span class="ot">=</span> tax_landis[,sel.tax.vars]</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>  tax_landis <span class="ot">=</span> tax_landis[<span class="sc">!</span><span class="fu">is.na</span>(tax_landis<span class="sc">$</span>taxsubgrp) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(tax_landis<span class="sc">$</span>longitude_decimal_degrees),]</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>  <span class="co">#summary(as.factor(tax_landis$taxsubgrp))</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining by: SERIES_NAME</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(tax_landis)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 104704      7</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 104704      7</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <p>Next, we can bind the 3 data sets to produce 1 consistent legend with finite number of classes and names strictly standardized. We also add “s” to fix typos etc.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_all"</span>)){</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  tax_all <span class="ot">=</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(tax_nasis, tax_wosis, ncss.site))</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#str(tax_all)</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="do">## 378793 obs. of  7 variables</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="do">## add missing "s"</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#tax_all$taxsubgrp = sapply(tax_all$taxsubgrp, add_s)</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  tax_all<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">unlist</span>(parallel<span class="sc">::</span><span class="fu">mclapply</span>(tax_all<span class="sc">$</span>taxsubgrp, add_s, <span class="at">mc.cores =</span> <span class="dv">32</span>))</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(as.factor(tax_all$taxsubgrp[grep("boralf", tax_all$taxsubgrp)]))</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">as.factor</span>(tax_all<span class="sc">$</span>taxsubgrp))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_all"</span>)){</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  tax_all <span class="ot">=</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(tax_nasis, tax_wosis, ncss.site, tax_landis))</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">#str(tax_all)</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="do">## 483497 obs. of  7 variables</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="do">## add missing "s"</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#tax_all$taxsubgrp = sapply(tax_all$taxsubgrp, add_s)</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  tax_all<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">unlist</span>(parallel<span class="sc">::</span><span class="fu">mclapply</span>(tax_all<span class="sc">$</span>taxsubgrp, add_s, <span class="at">mc.cores =</span> <span class="dv">32</span>))</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(as.factor(tax_all$taxsubgrp[grep("boralf", tax_all$taxsubgrp)]))</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">as.factor</span>(tax_all<span class="sc">$</span>taxsubgrp))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>          typic hapludalfs           typic hapludults 
-                      8481                       6832 
-         typic argiustolls         pachic argiustolls 
-                      6467                       4611 
+<pre><code>          typic epiaquepts          typic dystrudepts 
+                     26192                      17638 
+          aquic hapludalfs           typic hapludalfs 
+                     14388                      12622 
+          typic eutrudepts          typic fluvaquents 
+                      9007                       7707 
+          typic hapludults          typic argiustolls 
+                      6832                       6467 
+        typic haploxererts          typic haplorthods 
+                      6463                       5873 
+        typic udipsamments         pachic argiustolls 
+                      4912                       4611 
           typic argiudolls          mollic hapludalfs 
                       4561                       4516 
-        aridic argiustolls           typic paleudults 
-                      4131                       4124 
-         typic endoaquolls           aquic hapludalfs 
-                      3855                       3780 
-         typic dystrudepts         aridic haplustalfs 
-                      3689                       3682 
-         typic haplustolls        aridic calciustepts 
-                      3590                       3479 
-       oxyaquic hapludalfs         ustic haplocalcids 
-                      3389                       2979 
-         typic haplustalfs           ultic hapludalfs 
-                      2832                       2738 
-          typic paleudalfs          typic argiaquolls 
-                      2685                       2578 
-         typic haplustepts         aridic haplustepts 
-                      2560                       2521 
-        typic udipsamments           typic hapludolls 
-                      2369                       2309 
+          typic paleudalfs         aridic argiustolls 
+                      4481                       4131 
+          typic paleudults          typic endoaquolls 
+                      4124                       3855 
+        aridic haplustalfs          typic haplustolls 
+                      3682                       3590 
+       aridic calciustepts        oxyaquic hapludalfs 
+                      3479                       3389 
+        ustic haplocalcids          typic haplustalfs 
+                      2979                       2832 
+          ultic hapludalfs          typic argiaquolls 
+                      2738                       2636 
+        lithic haplustolls    fluvaquentic eutrudepts 
+                      2633                       2615 
+         typic haplustepts           typic hapludolls 
+                      2560                       2524 
+        aridic haplustepts          histic humaquepts 
+                      2521                       2295 
        aridic calciustolls         ustic haplocambids 
                       2258                       2256 
-       typic torriorthents         lithic haplustolls 
-                      2162                       2122 
-          aeric epiaqualfs          ustic calciargids 
-                      2109                       1991 
-      typic torripsamments         cumulic hapludolls 
-                      1960                       1934 
-       cumulic haplustolls           ustic haplargids 
-                      1918                       1836 
-          udic argiustolls         aridic paleustolls 
-                      1815                       1810 
-          aquic argiudolls        ustic torriorthents 
-                      1798                       1738 
-        aridic haplustolls lithic ustic torriorthents 
-                      1736                       1697 
-        typic haplocalcids         pachic haplustolls 
-                      1662                       1623 
+       typic torriorthents           aeric epiaqualfs 
+                      2162                       2109 
+         ustic calciargids           aquic eutrudepts 
+                      1991                       1969 
+      typic torripsamments          lithic udorthents 
+                      1960                       1949 
+        cumulic hapludolls        cumulic haplustolls 
+                      1934                       1918 
+          ustic haplargids           udic argiustolls 
+                      1836                       1815 
+        aridic paleustolls           aquic argiudolls 
+                      1810                       1798 
+       ustic torriorthents         aridic haplustolls 
+                      1738                       1736 
+lithic ustic torriorthents         typic haplocalcids 
+                      1697                       1662 
+        pachic haplustolls           typic udorthents 
+                      1623                       1571 
           aquic hapludults          andic haplocryods 
                       1563                       1547 
         ultic haploxeralfs       calcidic argiustolls 
                       1543                       1541 
-       oxyaquic argiudolls           typic udorthents 
-                      1539                       1538 
-         typic fragiudults         aridic paleustalfs 
-                      1506                       1446 
+       oxyaquic argiudolls          typic fragiudults 
+                      1539                       1506 
+     typic sphagnofibrists         typic psammaquents 
+                      1493                       1488 
+        aridic paleustalfs        typic haplosaprists 
+                      1446                       1443 
        cumulic endoaquolls        typic dystrocryepts 
                       1414                       1394 
         typic haplocryepts         typic eutrocryepts 
@@ -511,53 +557,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
                       1305                       1298 
          ustic argicryolls          typic argixerolls 
                       1290                       1285 
-       typic kanhapludults       terric haplosaprists 
-                      1222                       1211 
+          typic epiaqualfs        typic kanhapludults 
+                      1240                       1222 
+      terric haplosaprists          aquic dystrudepts 
+                      1211                       1209 
         typic calciustolls         lithic argixerolls 
                       1207                       1204 
          typic udifluvents          typic ustorthents 
                       1204                       1195 
-         typic haplorthods         dystric eutrudepts 
-                      1194                       1186 
-      oxyaquic fragiudalfs           typic eutrudepts 
-                      1184                       1173 
+        dystric eutrudepts       oxyaquic fragiudalfs 
+                      1186                       1184 
   fluvaquentic endoaquolls         typic histoturbels 
                       1163                       1162 
-          aquic hapludolls         pachic argicryolls 
-                      1139                       1133 
+        aquic udipsamments           aquic hapludolls 
+                      1151                       1139 
+        pachic argicryolls          typic endoaqualfs 
+                      1133                       1132 
       calcidic haplustalfs   petrocalcic calciustolls 
                       1102                       1083 
         typic haplocambids           typic haplargids 
                       1081                       1052 
-       calcic petrocalcids          typic endoaqualfs 
-                      1027                       1017 
-         lithic hapludolls           xeric haplargids 
-                      1009                        965 
-      lithic torriorthents         typic glossaqualfs 
-                       957                        957 
-      oxyaquic glossudalfs        typic ustipsamments 
-                       949                        928 
-        aeric calciaquolls           udic haplustalfs 
-                       923                        904 
-         typic haplocryods     typic quartzipsamments 
-                       901                        893 
-       typic haplosaprists         lithic ustorthents 
-                       891                        882 
-     vitrandic argixerolls         xeric haplocalcids 
-                       879                        839 
-        pachic argixerolls        typic torrifluvents 
-                       836                        825 
-oxyaquic vertic argiudolls                    (Other) 
-                       824                     185042 </code></pre>
+       calcic petrocalcids          lithic hapludolls 
+                      1027                       1009 
+          xeric haplargids       lithic torriorthents 
+                       965                        957 
+        typic glossaqualfs                    (Other) 
+                       957                     197524 </code></pre>
 </div>
 </div>
 <p>This shows which are the world’s most frequent subgroup classes. Next we can complete the final legend. For practical purposes, we limit to classes that have at least 30 observations, which gives a total of 818 classes.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(ext.l, "tax_extensions_summary.csv")</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>tax.sm <span class="ot">=</span> <span class="fu">summary</span>(<span class="fu">as.factor</span>(tax_all<span class="sc">$</span>taxsubgrp), <span class="at">maxsum =</span> <span class="dv">820</span>)</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>tax.s <span class="ot">=</span> <span class="fu">as.data.frame</span>(tax.sm)</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>levels <span class="ot">=</span> <span class="fu">attr</span>(tax.sm, <span class="st">"names"</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">818</span>]</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tax.s, "tax_taxsubgrp_summary.csv")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(ext.l, "tax_extensions_summary.csv")</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>tax.sm <span class="ot">=</span> <span class="fu">summary</span>(<span class="fu">as.factor</span>(tax_all<span class="sc">$</span>taxsubgrp), <span class="at">maxsum =</span> <span class="dv">820</span>)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>tax.s <span class="ot">=</span> <span class="fu">as.data.frame</span>(tax.sm)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>levels <span class="ot">=</span> <span class="fu">attr</span>(tax.sm, <span class="st">"names"</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">818</span>]</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(tax.s, <span class="st">"correlation/tax_taxsubgrp_summary.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>It is important for further spatial analysis that the number of classes is finite and that there are enough points for Machine Learning for example.</p>
 </section>
@@ -565,27 +599,27 @@ oxyaquic vertic argiudolls                    (Other)
 <h2 class="anchored" data-anchor-id="fuzzy-search">Fuzzy search</h2>
 <p>Next, we would also like to add points from national and regional soil profiles that are not listed above and that could help increase representation of points geographically. For this we use the previously compiled soil data described in the previous sections:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_spropsA"</span>)){</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> <span class="fu">as.data.frame</span>( <span class="fu">rbind</span>(<span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="fu">paste0</span>(drv, <span class="st">"sol_chem.pnts_horizons.rds"</span>))),</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="fu">paste0</span>(drv, <span class="st">"sol_chem.pnts_horizons_TMP.rds"</span>))), <span class="at">fill=</span><span class="cn">TRUE</span>, <span class="at">ignore.attr=</span><span class="cn">TRUE</span>))</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span>tax_sprops0<span class="sc">$</span>source_db<span class="sc">==</span><span class="st">"USDA_NCSS"</span> <span class="sc">&amp;</span> <span class="sc">!</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA / NA"</span>, <span class="st">"#N/A / #N/A"</span>, <span class="st">" / "</span>)),]</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  tax_sprops0<span class="sc">$</span>year <span class="ot">=</span> <span class="fu">substr</span>(tax_sprops0<span class="sc">$</span>site_obsdate, <span class="dv">1</span>, <span class="dv">4</span>)</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span><span class="fu">duplicated</span>(tax_sprops0<span class="sc">$</span>olc_id),]</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  tax_sprops0<span class="sc">$</span>SSL_classification_name <span class="ot">=</span> <span class="fu">tolower</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name)</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span><span class="fu">is.na</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name),]</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dim</span>(tax_sprops0)</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="do">## 38441    45</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">#summary(as.factor(tax_sprops0$source_db))</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">#str(tax_sprops0$SSL_classification_name)</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  tax_c1 <span class="ot">=</span> <span class="fu">sapply</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name, <span class="cf">function</span>(i){<span class="fu">strsplit</span>(i, <span class="st">" / "</span>)[[<span class="dv">1</span>]][<span class="dv">1</span>]})</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  tax_c2 <span class="ot">=</span> <span class="fu">sapply</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name, <span class="cf">function</span>(i){<span class="fu">strsplit</span>(i, <span class="st">" / "</span>)[[<span class="dv">1</span>]][<span class="dv">2</span>]})</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  sel.tax.vars0 <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"site_key"</span>, <span class="st">"olc_id"</span>, <span class="st">"year"</span>, <span class="st">"source_db"</span>, <span class="st">"longitude_decimal_degrees"</span>, <span class="st">"latitude_decimal_degrees"</span>)</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  tax_spropsA <span class="ot">=</span> <span class="fu">rbind</span>(<span class="fu">cbind</span>(tax_sprops0[,sel.tax.vars0], <span class="fu">data.frame</span>(<span class="at">SSL_classification_name=</span>tax_c1)),</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">cbind</span>(tax_sprops0[,sel.tax.vars0], <span class="fu">data.frame</span>(<span class="at">SSL_classification_name=</span>tax_c2)))</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"tax_spropsA"</span>)){</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> <span class="fu">as.data.frame</span>( <span class="fu">rbind</span>(<span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="fu">paste0</span>(drv, <span class="st">"sol_chem.pnts_horizons.rds"</span>))),</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                                     <span class="fu">data.table</span>(<span class="fu">readRDS.gz</span>(<span class="fu">paste0</span>(drv, <span class="st">"sol_chem.pnts_horizons_TMP.rds"</span>))), <span class="at">fill=</span><span class="cn">TRUE</span>, <span class="at">ignore.attr=</span><span class="cn">TRUE</span>))</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span>tax_sprops0<span class="sc">$</span>source_db<span class="sc">==</span><span class="st">"USDA_NCSS"</span> <span class="sc">&amp;</span> <span class="sc">!</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">""</span>, <span class="st">"NA / NA"</span>, <span class="st">"#N/A / #N/A"</span>, <span class="st">" / "</span>)),]</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  tax_sprops0<span class="sc">$</span>year <span class="ot">=</span> <span class="fu">substr</span>(tax_sprops0<span class="sc">$</span>site_obsdate, <span class="dv">1</span>, <span class="dv">4</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span><span class="fu">duplicated</span>(tax_sprops0<span class="sc">$</span>olc_id),]</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  tax_sprops0<span class="sc">$</span>SSL_classification_name <span class="ot">=</span> <span class="fu">tolower</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  tax_sprops0 <span class="ot">=</span> tax_sprops0[<span class="sc">!</span><span class="fu">is.na</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name),]</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dim</span>(tax_sprops0)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>  <span class="do">## 41067    46</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">#summary(as.factor(tax_sprops0$source_db))</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">#str(tax_sprops0$SSL_classification_name)</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>  tax_c1 <span class="ot">=</span> <span class="fu">sapply</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name, <span class="cf">function</span>(i){<span class="fu">strsplit</span>(i, <span class="st">" / "</span>)[[<span class="dv">1</span>]][<span class="dv">1</span>]})</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>  tax_c2 <span class="ot">=</span> <span class="fu">sapply</span>(tax_sprops0<span class="sc">$</span>SSL_classification_name, <span class="cf">function</span>(i){<span class="fu">strsplit</span>(i, <span class="st">" / "</span>)[[<span class="dv">1</span>]][<span class="dv">2</span>]})</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  sel.tax.vars0 <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"site_key"</span>, <span class="st">"olc_id"</span>, <span class="st">"year"</span>, <span class="st">"source_db"</span>, <span class="st">"longitude_decimal_degrees"</span>, <span class="st">"latitude_decimal_degrees"</span>)</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>  tax_spropsA <span class="ot">=</span> <span class="fu">rbind</span>(<span class="fu">cbind</span>(tax_sprops0[,sel.tax.vars0], <span class="fu">data.frame</span>(<span class="at">SSL_classification_name=</span>tax_c1)),</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">cbind</span>(tax_sprops0[,sel.tax.vars0], <span class="fu">data.frame</span>(<span class="at">SSL_classification_name=</span>tax_c2)))</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   82016 obs. of  7 variables:
+<pre><code>'data.frame':   98472 obs. of  7 variables:
  $ site_key                 : chr  "15" "17" "18" "19" ...
  $ olc_id                   : chr  "9F6FRM8J+J62" "9F6CPWCV+9M9" "9F6FP2XH+P9C" "9F6FQ52P+RHW" ...
  $ year                     : chr  "2016" "2016" "2015" "2016" ...
@@ -595,37 +629,37 @@ oxyaquic vertic argiudolls                    (Other)
  $ SSL_classification_name  : chr  "typic argiudoll" "aeric tropaquept" "humaquept" "humaquept" ...</code></pre>
 </div>
 </div>
-<p>This gives us additional 77k points with soil classification name. These points need to be cleaned up to match exactly the previously produced legend. Because fuzzy matching can be computational as the algorithm looks for N classes in M rows, we run this matching in parallel:</p>
+<p>This gives us additional 100k points with soil classification name. These points need to be cleaned up to match exactly the previously produced legend. Because fuzzy matching can be computational as the algorithm looks for N classes in M rows, we run this matching in parallel:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(parallel)</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>tax_spropsA.lst <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(levels, <span class="cf">function</span>(i){<span class="fu">match_tax</span>(i, tax_spropsA)}, <span class="at">mc.cores=</span><span class="dv">30</span>)</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>tax_spropsV <span class="ot">=</span> <span class="fu">do.call</span>(rbind, tax_spropsA.lst)</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Add missing "S" on the end:</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="do">## "paleustollic chromustert" -&gt; "paleustollic chromusterts"</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>tax_spropsV<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">unlist</span>(parallel<span class="sc">::</span><span class="fu">mclapply</span>(tax_spropsV<span class="sc">$</span>taxsubgrp, add_s, <span class="at">mc.cores =</span> <span class="dv">30</span>))</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsV)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(parallel)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>tax_spropsA.lst <span class="ot">=</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(levels, <span class="cf">function</span>(i){<span class="fu">match_tax</span>(i, tax_spropsA)}, <span class="at">mc.cores=</span><span class="dv">30</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>tax_spropsV <span class="ot">=</span> <span class="fu">do.call</span>(rbind, tax_spropsA.lst)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Add missing "S" on the end:</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="do">## "paleustollic chromustert" -&gt; "paleustollic chromusterts"</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>tax_spropsV<span class="sc">$</span>taxsubgrp <span class="ot">=</span> <span class="fu">unlist</span>(parallel<span class="sc">::</span><span class="fu">mclapply</span>(tax_spropsV<span class="sc">$</span>taxsubgrp, add_s, <span class="at">mc.cores =</span> <span class="dv">30</span>))</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_spropsV)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   28507 obs. of  8 variables:
- $ site_key                 : chr  "67" "75" "91" "114" ...
- $ olc_id                   : chr  "9F6GC5XP+856" "9F6M9JCF+J75" "9F6J9Q4H+GM2" "9F6G7RV2+PW5" ...
- $ year                     : chr  "2016" "2014" "2014" "2016" ...
- $ source_db                : chr  "BZE_LW" "BZE_LW" "BZE_LW" "BZE_LW" ...
- $ longitude_decimal_degrees: num  10.2 13.6 12.8 10.8 10.1 ...
- $ latitude_decimal_degrees : num  54.4 54.4 54.4 54.3 54.2 ...
- $ SSL_classification_name  : chr  "typic hapludalfs" "typic hapludalfs" "typic hapludalfs" "typic hapludalfs" ...
- $ taxsubgrp                : chr  "typic hapludalfs" "typic hapludalfs" "typic hapludalfs" "typic hapludalfs" ...</code></pre>
+<pre><code>'data.frame':   33434 obs. of  8 variables:
+ $ site_key                 : chr  "78" "845" "1472" "10711" ...
+ $ olc_id                   : chr  "66XR96RR+CFR" "67C29FCP+V2P" "6772QHXM+F2R" "6793JV6J+HH9" ...
+ $ year                     : chr  "1979" "2010" "2011" "2015" ...
+ $ source_db                : chr  "CostaRica" "Ecuador_HESD" "Ecuador_HESD" "Ecuador_HESD" ...
+ $ longitude_decimal_degrees: num  -83.8 -79.5 -79.4 -78.1 -77.4 ...
+ $ latitude_decimal_degrees : num  9.391 -1.628 -4.201 -2.389 0.121 ...
+ $ SSL_classification_name  : chr  "typic epiaquepts" "typic epiaquepts" "typic epiaquepts" "typic epiaquents" ...
+ $ taxsubgrp                : chr  "typic epiaquepts" "typic epiaquepts" "typic epiaquepts" "typic epiaquepts" ...</code></pre>
 </div>
 </div>
-<p>this shows that only 28k have an actually matching soil type that we can use.</p>
+<p>this shows that only 34k have an actually matching soil type that we can use.</p>
 </section>
 <section id="final-bind" class="level2">
 <h2 class="anchored" data-anchor-id="final-bind">Final bind</h2>
 <p>We can finally bind and export the final Analysis-Ready table with training points matching our target legend:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(tax_all, tax_spropsV[,sel.tax.vars]))</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(tax_all, tax_spropsV[,sel.tax.vars]))</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   407300 obs. of  7 variables:
+<pre><code>'data.frame':   516931 obs. of  7 variables:
  $ site_key                 : chr  "NASIS.115624" "NASIS.115623" "NASIS.9914" "NASIS.9948" ...
  $ olc_id                   : chr  "85V4PQC2+G3V" "85V4QW49+6PQ" "84PRGC6X+2JP" "84PRCCV7+MXV" ...
  $ year                     : chr  "2000" "2000" "2000" "2000" ...
@@ -634,23 +668,23 @@ oxyaquic vertic argiudolls                    (Other)
  $ latitude_decimal_degrees : num  47.7 47.8 44.5 44.4 47.2 ...
  $ taxsubgrp                : chr  "xeric argialbolls" "aquandic humaquepts" "pachic fulvicryands" "lithic hapludands" ...</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 338271 obs. of  7 variables</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="do">## we do need duplicates as some translations lead to 2-3 classes</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co">#tax_allT = tax_allT[!duplicated(tax_allT$olc_id),]</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="do">## remove all points with exactly the same TAX and olc_id</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>dup <span class="ot">=</span> <span class="fu">duplicated</span>(<span class="fu">gsub</span>(<span class="st">" "</span>, <span class="st">"_"</span>, <span class="fu">paste</span>(tax_allT<span class="sc">$</span>olc_id, tax_allT<span class="sc">$</span>taxsubgrp, <span class="at">sep=</span><span class="st">" "</span>)))</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dup) <span class="do">## 47786 complete duplicates</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="do">## 510849 obs. of  7 variables</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="do">## we do need duplicates as some translations lead to 2-3 classes</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co">#tax_allT = tax_allT[!duplicated(tax_allT$olc_id),]</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="do">## remove all points with exactly the same TAX and olc_id</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>dup <span class="ot">=</span> <span class="fu">duplicated</span>(<span class="fu">gsub</span>(<span class="st">" "</span>, <span class="st">"_"</span>, <span class="fu">paste</span>(tax_allT<span class="sc">$</span>olc_id, tax_allT<span class="sc">$</span>taxsubgrp, <span class="at">sep=</span><span class="st">" "</span>)))</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(dup) <span class="do">## 47811 complete duplicates</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   Mode   FALSE    TRUE 
-logical  359494   47806 </code></pre>
+logical  469120   47811 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> tax_allT[<span class="sc">!</span>dup,]</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(as.factor(tax_allT$source_db))</span></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="do">## use only points from the target legend:</span></span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>tax_allT0 <span class="ot">=</span> tax_allT[<span class="fu">which</span>(tax_allT<span class="sc">$</span>taxsubgrp <span class="sc">%in%</span> levels),]</span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>tax_allT <span class="ot">=</span> tax_allT[<span class="sc">!</span>dup,]</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(as.factor(tax_allT$source_db))</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="do">## use only points from the target legend:</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>tax_allT0 <span class="ot">=</span> tax_allT[<span class="fu">which</span>(tax_allT<span class="sc">$</span>taxsubgrp <span class="sc">%in%</span> levels),]</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tax_allT0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>'data.frame':   338255 obs. of  7 variables:
+<pre><code>'data.frame':   447124 obs. of  7 variables:
  $ site_key                 : chr  "NASIS.275760" "NASIS.9655" "NASIS.9669" "NASIS.9730" ...
  $ olc_id                   : chr  "85V565W5+4Q8" "84QRQJP7+9P8" "84QRFHF7+WX6" "84QRMJ24+MPW" ...
  $ year                     : chr  "2000" "2000" "2000" "2000" ...
@@ -659,19 +693,19 @@ logical  359494   47806 </code></pre>
  $ latitude_decimal_degrees : num  47.2 45.8 45.5 45.7 44.4 ...
  $ taxsubgrp                : chr  "vitrandic haploxerolls" "dystric eutrudepts" "andic dystrudepts" "humic dystrudepts" ...</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20260424.csv.gz"))</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co">#writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write.csv(tax_allT0, gzfile("taxsubgrp_pnts_global_xyt_v20260506.csv.gz"))</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="co">#writeVector(vect(tax_allT0, geom=c("longitude_decimal_degrees", "latitude_decimal_degrees"), crs="EPSG:4326"), "/data/wri_soil/taxsubgrp_pnts_global_xyt.gpkg", overwrite=TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Note, we removed some duplicates as many data sets are compilations so some points appear in multiple data sets.</p>
 <p>We can plot the density of points in Goode Homolosize Interupted projection so that areas are shown realistically:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>g1 <span class="ot">=</span> terra<span class="sc">::</span><span class="fu">vect</span>(<span class="fu">paste0</span>(drv, <span class="st">"tiles_GH_100km_land.gpkg"</span>))</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>ovt.g1 <span class="ot">=</span> terra<span class="sc">::</span><span class="fu">extract</span>(g1[<span class="st">"ID"</span>], terra<span class="sc">::</span><span class="fu">project</span>(terra<span class="sc">::</span><span class="fu">vect</span>(tax_allT, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"longitude_decimal_degrees"</span>, <span class="st">"latitude_decimal_degrees"</span>), <span class="at">crs=</span><span class="st">"EPSG:4326"</span>), <span class="fu">crs</span>(g1)))</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>g1t.c <span class="ot">=</span> <span class="fu">summary</span>(<span class="fu">as.factor</span>(ovt.g1<span class="sc">$</span>ID), <span class="at">maxsum =</span> <span class="fu">length</span>(<span class="fu">levels</span>(<span class="fu">as.factor</span>(ovt.g1<span class="sc">$</span>ID))))</span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>g1t.df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">count=</span>g1t.c, <span class="at">ID=</span><span class="fu">attr</span>(g1t.c, <span class="st">"names"</span>))</span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>g1<span class="sc">$</span>count <span class="ot">=</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(<span class="fu">data.frame</span>(<span class="at">ID=</span>g1<span class="sc">$</span>ID), g1t.df)<span class="sc">$</span>count</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="co">#plot(g1["count"])</span></span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="co">#writeVector(g1["count"], "/data/dev/tiles_GH_100km_tax.dens.gpkg", overwrite=TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>g1 <span class="ot">=</span> terra<span class="sc">::</span><span class="fu">vect</span>(<span class="fu">paste0</span>(drv, <span class="st">"tiles_GH_100km_land.gpkg"</span>))</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>ovt.g1 <span class="ot">=</span> terra<span class="sc">::</span><span class="fu">extract</span>(g1[<span class="st">"ID"</span>], terra<span class="sc">::</span><span class="fu">project</span>(terra<span class="sc">::</span><span class="fu">vect</span>(tax_allT, <span class="at">geom=</span><span class="fu">c</span>(<span class="st">"longitude_decimal_degrees"</span>, <span class="st">"latitude_decimal_degrees"</span>), <span class="at">crs=</span><span class="st">"EPSG:4326"</span>), <span class="fu">crs</span>(g1)))</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>g1t.c <span class="ot">=</span> <span class="fu">summary</span>(<span class="fu">as.factor</span>(ovt.g1<span class="sc">$</span>ID), <span class="at">maxsum =</span> <span class="fu">length</span>(<span class="fu">levels</span>(<span class="fu">as.factor</span>(ovt.g1<span class="sc">$</span>ID))))</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>g1t.df <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">count=</span>g1t.c, <span class="at">ID=</span><span class="fu">attr</span>(g1t.c, <span class="st">"names"</span>))</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>g1<span class="sc">$</span>count <span class="ot">=</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(<span class="fu">data.frame</span>(<span class="at">ID=</span>g1<span class="sc">$</span>ID), g1t.df)<span class="sc">$</span>count</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="co">#plot(g1["count"])</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="fu">writeVector</span>(g1[<span class="st">"count"</span>], <span class="st">"/data/dev/tiles_GH_100km_tax.dens.gpkg"</span>, <span class="at">overwrite=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="cell-output-display">
@@ -683,9 +717,25 @@ logical  359494   47806 </code></pre>
 </div>
 </div>
 </div>
+<p>Distribution of training points considering soil orders is:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>usda_stats <span class="ot">=</span> <span class="fu">read.csv</span>(<span class="st">"./correlation/TAXSUSDA_stats.csv"</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>usda_tax<span class="sc">$</span>Great_Group <span class="ot">=</span> <span class="fu">tolower</span>(usda_tax<span class="sc">$</span>Great_Group)</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>usda_stats<span class="sc">$</span>Order <span class="ot">=</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(usda_stats, usda_tax, <span class="at">by=</span><span class="st">"Great_Group"</span>)<span class="sc">$</span>Order</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>o.lst <span class="ot">=</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(tax_allT[<span class="st">"taxsubgrp"</span>], usda_stats, <span class="at">by=</span><span class="fu">join_by</span>(taxsubgrp<span class="sc">==</span>USDA.subgroup))<span class="sc">$</span>Order</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">as.factor</span>(o.lst))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Alfisols    Andisols   Aridisols    Entisols    Gelisols   Histosols 
+      85420        5569       30805       60400        4559        7875 
+Inceptisols   Mollisols     Oxisols   Spodosols    Ultisols   Vertisols 
+     110684      102524         497       14662       20370       16403 
+       NA's 
+       9352 </code></pre>
+</div>
+</div>
 <p>Save temp object:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">save.image.pigz</span>(<span class="at">file=</span><span class="st">"soilusda.RData"</span>, <span class="at">n.cores =</span> <span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">save.image.pigz</span>(<span class="at">file=</span><span class="st">"soilusda.RData"</span>, <span class="at">n.cores =</span> <span class="dv">30</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

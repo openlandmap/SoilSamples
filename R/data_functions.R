@@ -1,6 +1,45 @@
 ## Generic functions
 ## tom.hengl@opengeohub.org
 
+dms_to_dd <- function(deg, min, sec, dir) {
+  dd <- as.numeric(deg) + as.numeric(min) / 60 + as.numeric(sec) / 3600
+  ifelse(dir %in% c("S", "W"), -dd, dd)
+}
+parse_dms <- function(dms_string) {
+  # Match: degrees, minutes, seconds, direction for LAT and LON
+  pattern <- paste0(
+    "(\\d+)°\\s*(\\d+)'\\s*(\\d+(?:\\.\\d+)?)",   # deg min sec
+    "'\\s+'\\s*([NSns])\\s*",                       # ' ' + direction LAT
+    "(\\d+)°\\s*(\\d+)'\\s*(\\d+(?:\\.\\d+)?)",   # deg min sec
+    "'\\s+'\\s*([EWew])"                            # ' ' + direction LON
+  )
+  m <- regmatches(dms_string,
+                  regexpr(pattern, dms_string, perl = TRUE))
+  parts <- regmatches(dms_string,
+                      regexec(pattern, dms_string, perl = TRUE))[[1]]
+  lat <- dms_to_dd(parts[2], parts[3], parts[4], toupper(parts[5]))
+  lon <- dms_to_dd(parts[6], parts[7], parts[8], toupper(parts[9]))
+  c(latitude = lat, longitude = lon)
+}
+
+# RDM (g/g) can be related to BD via:
+# BD_corrected = BD_mineral * (1 - RDM) + BD_organic * RDM
+# Typical BD_organic ~ 0.1-0.2 g/cm³
+ptf_rdm_weighted <- function(rdm_g_g,
+                             bd_mineral = 1.65,
+                             bd_organic = 0.15) {
+  bd_mineral * (1 - rdm_g_g) + bd_organic * rdm_g_g
+}
+# Combined PTF using both SOC and RDM
+ptf_combined <- function(soc_pct, rdm_g_g) {
+  om_pct <- soc_pct * 1.724
+  bd_soc <- 1 / (0.6291 + 0.2956 * om_pct + 0.0000076 * om_pct^2)  # Rawls
+  bd_rdm <- ptf_rdm_weighted(rdm_g_g)
+  # weighted average — give more weight to RDM if > 5%
+  w <- ifelse(rdm_g_g > 0.05, 0.6, 0.4)
+  w * bd_rdm + (1 - w) * bd_soc
+}
+
 ## most probablye translation
 sumcor <- function(x, a, b, lev, max=4, stats=FALSE){
   o1 = summary(as.factor(x[x[,a]==lev,b]))

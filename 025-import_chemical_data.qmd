@@ -13,10 +13,10 @@ Last update:  `r Sys.Date()`
 ```{r, include=FALSE, message=FALSE, results='hide'}
 ls <- c("tidyverse", "openair",  
         "cowplot", "rworldmap", "ggplot2", "terra", 
-        "olctools", "vroom")
+        "olctools", "vroom", "janitor", "parzer")
 new.packages <- ls[!(ls %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages, repos="https://cloud.r-project.org")
-lapply(ls, require, character.only = TRUE)
+x = lapply(ls, require, character.only = TRUE)
 ```
 
 ## Overview
@@ -1263,6 +1263,8 @@ dim(chemsprops.CNSOTER)
 
 - Díaz-Guadarrama, S., Varón-Ramírez, V. M., Lizarazo, I., Guevara, M., Angelini, M., Araujo-Carrillo, G. A., ... & Rubiano, Y. (2024). Improving the Latin America and Caribbean Soil Information System (SISLAC) database enhances its usability and scalability. Earth System Science Data, 16(3), 1229-1246. <https://doi.org/10.5194/essd-16-1229-2024>; Data access: <https://doi.org/10.5281/zenodo.7876730>
 
+Note: sadly, year of sampling for many points is not documented (although it could probably be traced back as many of the data sets were 1-2 years projects).
+
 ```{r}
 if(!exists("chemsprops.SISLAC")){
   sis.hor = read.csv(paste0(drv, "SA/SISLAC/sislac_v2.csv"), stringsAsFactors = FALSE)
@@ -1283,6 +1285,7 @@ if(!exists("chemsprops.SISLAC")){
   #summary(sis.hor$coarse_fragments)
   sis.hor$oc_d = signif(sis.hor$oc / 1000 * sis.hor$bulk_density * 1000 * (100 - ifelse(is.na(sis.hor$coarse_fragments), 0, sis.hor$coarse_fragments))/100, 3)
   #summary(sis.hor$oc_d)
+  sis.hor$fecha = ifelse(sis.hor$fecha=="01/01/1900", NA, sis.hor$fecha)
   sis.hor$site_obsdate = format(as.Date(sis.hor$fecha, format="%d/%m/%Y"), "%Y-%m-%d")
   sis.hor$n_tot = sis.hor$n * 10
   #summary(sis.hor$k)
@@ -1428,6 +1431,53 @@ if(!exists("chemsprops.PRONASOLOS")){
 dim(chemsprops.PRONASOLOS)
 ## [1] 32708    39
 ```
+
+#### MapBiomas soil data
+
+- MapBiomas, 2025, Training Field Soil Data for Mapping of Soil Particle Size Distribution (0-100 cm) in Brazil (MapBiomas Soil Collection 3, Beta Version), <https://doi.org/10.60502/SoilData/OXSR2N>, SoilData, V3.
+- MapBiomas, 2025, Training Field Soil Data for Annual Mapping of Soil Organic Carbon Stock (0–30 cm) in Brazil, 1985–2024 (MapBiomas Soil Collection 3, Beta Version). <https://doi.org/10.60502/SoilData/IUZOAK>, SoilData, V1.
+
+Compilation of soil samples from various projects (overlaps with PRONOSOLOS and FEBR).
+
+```{r}
+if(!exists("chemsprops.MapBiomas")){
+  csv.lst = list.files(paste0(drv, "Brasil/MapBiomas"), pattern="*_platform.csv$", full.names = TRUE)
+  mb.hor = plyr::join_all(lapply(csv.lst, read.csv))
+  #dim(mb.hor)
+  ## Rows: 42371 Columns: 21
+  ## dictionary:
+  ## profundidade = depth
+  ## fracao argila, silte, areia = fraction clay, silt, sand
+  ## fracao grossa pv = coarse fractions
+  ## ano da coleta = sampling year
+  ## densidade do solo gcm3 = soil bulk density
+  #summary(mb.hor$fracao_argila_gkg)
+  #summary(mb.hor$densidade_do_solo_gcm3) ## bulk density of total soil
+  ## 0 values!
+  mb.hor$bulk_density_oven_dry = ifelse(mb.hor$densidade_do_solo_gcm3<0.05, NA, mb.hor$densidade_do_solo_gcm3)
+  mb.hor$clay_tot_psa = mb.hor$fracao_argila_gkg /10
+  mb.hor$sand_tot_psa = mb.hor$fracao_areia_gkg /10
+  mb.hor$silt_tot_psa = mb.hor$fracao_silte_gkg /10
+  mb.hor$oc_d = signif(mb.hor$carbono_organico_gkg / 1000 * mb.hor$bulk_density_oven_dry * 1000 * (100 - ifelse(is.na(mb.hor$fracao_grossa_pv), 0, mb.hor$fracao_grossa_pv))/100, 3)
+  #summary(mb.hor$oc_d)
+  mb.hor$upedonid = make.unique(mb.hor$dataset_id)
+  #summary(mb.hor$ano_da_coleta>1999)
+  ## only 11,148 samples are > year 2000
+  MapBiomas.sel.h <- c("observacao_id", "upedonid", "ano_da_coleta", "longitude_grau", "latitude_grau", "SSL_classification_name", "labsampnum", "camada_id", "layer_sequence", "profundidade_inicial_cm", "profundidade_final_cm", "hzn_desgn", "texture_description", "texture_lab", "clay_tot_psa", "silt_tot_psa", "sand_tot_psa", "carbono_organico_gkg", "oc_d", "c_tot", "total_carbon_ncs", "ph_kcl", "ph_h2o", "ph_cacl2", "cec_sum", "cec_nh4", "ecec", "fracao_grossa_pv", "bulk_density_oven_dry", "ca_ext", "mg_ext", "na_ext", "k_ext", "ec_water_extractable", "ec_predict_one_to_two")
+  x.na = MapBiomas.sel.h[which(!MapBiomas.sel.h %in% names(mb.hor))]
+  if(length(x.na)>0){ for(i in x.na){ mb.hor[,i] = NA } }
+  chemsprops.MapBiomas = mb.hor[,MapBiomas.sel.h]
+  chemsprops.MapBiomas$source_db = "MapBiomas"
+  chemsprops.MapBiomas$confidence_degree = 5
+  chemsprops.MapBiomas$project_url = "https://brasil.mapbiomas.org/en/dados-mapbiomas-solo/"
+  chemsprops.MapBiomas$citation_url = "https://doi.org/10.60502/SoilData/IUZOAK"
+  chemsprops.MapBiomas <- complete.vars(chemsprops.MapBiomas, sel=c("carbono_organico_gkg", "clay_tot_psa", "bulk_density_oven_dry"), coords = c("longitude_grau", "latitude_grau"))
+  saveRDS.gz(chemsprops.MapBiomas, paste0(drv, "Brasil/MapBiomas/chemsprops.MapBiomas.rds"))
+}
+dim(chemsprops.MapBiomas)
+## [1] 42371    39
+```
+
 
 #### Guatemala Soil Organic Carbon Database (GTMSOC)
 
@@ -1610,9 +1660,7 @@ dim(chemsprops.MexicoINEGI2)
 
 - FAO and SAGARPA. (2012). Baseline of the Natural Resources Sustainability Program. Sustainable Land Use Subindex - Calculation Methodology. Mexico City (53 pp.) (FAO y SAGARPA. (2012). Línea de Base del Programa de Sustentabilidad de los Recursos Naturales. Subíndice de Uso Sustentable del Suelo - Metodología de Cálculo (53 pág.). Ciudad de México) <https://doi.org/10.6073/pasta/5d435c1459d48dc26ddf93ad933ca4b0>
 
-- Arroyo-Cruz, C.E., Prado, B., Kolb, M., Mora-Palomino, L.N., Todd-Brown, K. and Guevara,
-M. (2025), Synthesis of a National Soil Dataset Across Productive Land in Mexico: The
-Importance of Making Existing Data Accessible. Eur J Soil Sci, 76: e70116. <https://doi.org/10.1111/ejss.70116>
+- Arroyo-Cruz, C.E., Prado, B., Kolb, M., Mora-Palomino, L.N., Todd-Brown, K. and Guevara, M. (2025), Synthesis of a National Soil Dataset Across Productive Land in Mexico: The Importance of Making Existing Data Accessible. Eur J Soil Sci, 76: e70116. <https://doi.org/10.1111/ejss.70116>
 
 ```{r}
 if(!exists("chemsprops.MexicoSAGARPA")){
@@ -1633,12 +1681,14 @@ if(!exists("chemsprops.MexicoSAGARPA")){
   sagarpa.xy$layer_sequence <- 1
   sagarpa.xy$n_tot = sagarpa.xy$N * 10
   sagarpa.xy$SOIL_TYPE_ = tolower(add_s(sagarpa.xy$SOIL_TYPE))
+  ## harmonization of soil types - limited use!
   st.cor = read.csv('./correlation/soil_types_correlation_full_data_FAO74_US_CPSS.csv')
   st.cor$Correlation_ = tolower(st.cor$SoilGroupD90)
   sagarpa.xy$SSL_classification_name = dplyr::left_join(sagarpa.xy["SOIL_TYPE_"], st.cor, by=c("SOIL_TYPE_"="Correlation_"), multiple = "any")$SoilUnitDUS
   sagarpa.xy$SSL_classification_name = ifelse(sagarpa.xy$SSL_classification_name=="", dplyr::left_join(sagarpa.xy["SOIL_TYPE_"], st.cor, by=c("SOIL_TYPE_"="Correlation_"), multiple = "last")$SoilUnitDUS, sagarpa.xy$SSL_classification_name)
   sagarpa.xy$SSL_classification_name = ifelse(sagarpa.xy$SSL_classification_name=="", dplyr::left_join(sagarpa.xy["SOIL_TYPE_"], st.cor, by=c("SOIL_TYPE_"="Correlation_"), multiple = "any")$SoilUnitDUS, sagarpa.xy$SSL_classification_name)
   ##sagarpa.xy[1:10,c("SSL_classification_name","SOIL_TYPE_")]
+  #str(levels(as.factor(sagarpa.xy$SSL_classification_name)))
   ## remove all soil types from cold climates
   sagarpa.xy$SSL_classification_name[grep("cry", ignore.case = TRUE, sagarpa.xy$SSL_classification_name)] = NA
   sagarpa.sel.h = c("ID", "upedonid", "site_obsdate", "Longitude", "Latitude", "SSL_classification_name", "site_key", "layer_key", "layer_sequence", "hzn_top", "hzn_bot", "hzn_desgn", "SOIL_TEXTURE", "texture_lab", "CLAY", "SILT", "SAND", "oc", "oc_d", "c_tot", "n_tot", "ph_kcl", "pH", "ph_cacl2", "sum_of_cations_cec_pH_8_2", "CEC", "ecec_base_plus_aluminum", "SUP_GRAVA", "BD", "ca_ext", "mg_ext", "na_ext", "k_ext", "EC", "ec_12pre")
@@ -2079,7 +2129,6 @@ dim(chemsprops.bpht)
 ## [1] 5757   39
 ```
 
-
 #### Remnant native SOC database
 
 - Sanderman, J., (2017) "Remnant native SOC database", Soil carbon profile data from paired land use comparisons, <https://doi.org/10.7910/DVN/QQQM8V/8MSBNI>, Harvard Dataverse, V1  
@@ -2448,6 +2497,62 @@ dim(chemsprops.ScotlandNSIS1)
 ## [1] 3091   39
 ```
 
+#### LandIS UK
+
+- Data originated from the Cranfield University, Land Information System LandIS Portal <https://portal.landis.org.uk/>.
+
+Note: over 30,000 soil samples and over 250,000 soil observations and contains data on water catchment areas, subsidence and tree conditions information.
+
+```{r}
+if(!exists("chemsprops.LandIS")){
+  landis.csv = list.files(paste0(drv, "UK/landis"), pattern=glob2rx("^NSI*.csv"), full.names = TRUE)
+  landis.hor = plyr::join_all(lapply(landis.csv, function(i){vroom::vroom(i, .name_repair = ~ janitor::make_clean_names(.x))}), by = c("nsi_id","east_nsi", "north_nsi"), type = "full")
+  dim(landis.hor)
+  #[1] 33106    83
+  landis.xy = as.data.frame(geom(terra::project(terra::vect(landis.hor[,c("east_nsi","north_nsi")], geom=c("east_nsi","north_nsi"), crs="EPSG:27700"), "EPSG:4326"))[,c("x","y")])
+  landis.hor$longitude_decimal_degrees = landis.xy$x
+  landis.hor$latitude_decimal_degrees = landis.xy$y
+  summary(landis.hor$ph)
+  summary(landis.hor$carbon)
+  ## remove all rows with 0 values!
+  landis.hor$ph = ifelse(landis.hor$ph<1, NA, landis.hor$ph)
+  ## Bellamy et al. (2005); https://doi.org/10.1038/nature04038
+  landis.hor$carbon = ifelse(landis.hor$carbon==0, NA, landis.hor$carbon)
+  landis.hor$oc = ifelse(landis.hor$carbon>20, (0.52*landis.hor$carbon)-1.13, (0.40*landis.hor$carbon)-0.23)
+  landis.hor$oc = ifelse(landis.hor$oc<0, 0, landis.hor$oc)*10
+  #summary(landis.hor$oc)
+  landis.hor$site_obsdate = format(as.Date(landis.hor$sample_dat, format="%m/%d/%Y"), "%Y-%m-%d")
+  #summary(as.Date(landis.hor$site_obsdate))
+  landis.hor$sand_total = rowSums(landis.hor[,c("mfsand","csand","vfsand","msand")], na.rm = TRUE)
+  landis.hor$sand_total = ifelse(is.na(landis.hor$clay)|landis.hor$sand_total==0, NA, landis.hor$sand_total)
+  landis.hor$clay = ifelse(landis.hor$clay==0 & is.na(landis.hor$sand_total), NA, landis.hor$clay)
+  landis.hor$silt = ifelse(landis.hor$silt==0 & is.na(landis.hor$sand_total), NA, landis.hor$silt)
+  landis.hor$upper_dept = ifelse(is.na(landis.hor$upper_dept), 0, landis.hor$upper_dept)
+  landis.hor$lower_dept = ifelse(is.na(landis.hor$lower_dept), 15, landis.hor$lower_dept)
+  landis.in.name = c("site_key", "nsi_id", "site_obsdate",
+             "longitude_decimal_degrees", "latitude_decimal_degrees",
+             "SSL_classification_name", "lab_no", "layer_key", "layer_sequence",
+             "upper_dept", "lower_dept", "hzn_desgn", "texture", "texture_lab",
+             "clay", "silt", "sand_total", "oc", "oc_d", "c_tot", "n_tot", "ph_kcl",
+             "ph", "ph_cacl2", "sum_of_cations_cec_pH_8_2", "cec_nh4_ph_7",
+             "ecec_base_plus_aluminum", "total_frag_wt_pct_gt_2_mm_ws",
+             "bulk_density_oven_dry", "ca_acid", "mg_acid", 
+              "na_acid", "k_acid", "ec_water_extractable", "ec_predict_one_to_two")
+  x.na = landis.in.name[which(!landis.in.name %in% names(landis.hor))]
+  if(length(x.na)>0){ for(i in x.na){ landis.hor[,i] = NA } }
+  chemsprops.LandIS = landis.hor[,landis.in.name]
+  chemsprops.LandIS$source_db = "LandIS UK"
+  chemsprops.LandIS$confidence_degree = 1
+  chemsprops.LandIS$project_url = "https://portal.landis.org.uk/"
+  chemsprops.LandIS$citation_url = "https://portal.landis.org.uk/pages/landis-data"
+  chemsprops.LandIS = complete.vars(chemsprops.LandIS, sel = c("oc", "ph", "clay"))
+  saveRDS.gz(chemsprops.LandIS, paste0(drv, "UK/landis/chemsprops.LandIS.rds"))
+}
+dim(chemsprops.LandIS)
+## [1] 12986   39
+```
+
+
 #### Ecoforest map of Quebec, Canada 
 
 - Duchesne, L., Ouimet, R., (2021). Digital mapping of soil texture in ecoforest polygons in Quebec, Canada. PeerJ 9:e11685 <https://doi.org/10.7717/peerj.11685>. Data download URL: <https://doi.org/10.7717/peerj.11685/supp-1>
@@ -2653,6 +2758,7 @@ if(!exists("chemsprops.HSDOS")){
   chemsprops.HSDOS$project_url = "https://atk.hun-ren.hu/en/hun-ren-atk-researchers-published-and-made-available-a-comprehensive-soil-spectrum-library-fully-representing-agricultural-soils-of-hungary/"
   chemsprops.HSDOS$citation_url = "https://doi.org/10.1016/j.geoderma.2023.116587"
   chemsprops.HSDOS$confidence_degree = 2
+  chemsprops.HSDOS = complete.vars(chemsprops.HSDOS, sel = c("organic_carbon", "ph_kcl"))
   saveRDS.gz(chemsprops.HSDOS, paste0(drv, "Hungary/chemsprops.HSDOS.rds"))
 }
 dim(chemsprops.HSDOS)
@@ -2664,6 +2770,7 @@ dim(chemsprops.HSDOS)
 
 - Schmidinger, J., Vogel, S., Barkov, V., Pham, A. D., Gebbers, R., Tavakoli, H., ... & Atzmueller, M. (2025). LimeSoDa: A dataset collection for benchmarking of machine learning regressors in digital soil mapping. Geoderma, 459, 117337. <https://doi.org/10.1016/j.geoderma.2025.117337>; data download: <https://doi.org/10.5281/zenodo.14932573>
 
+Note: compilation of various farm-scale data sets (densely spaced points) with only soil carbon, pH and clay content. Laboratory reference methods are unknown and many points come without coordinates (unsable for spatila modeling) unfortunately.
 
 ```{r}
 if(!exists("chemsprops.LimeSoDa")){
@@ -2711,11 +2818,137 @@ if(!exists("chemsprops.LimeSoDa")){
   chemsprops.LimeSoDa$project_url = "https://github.com/JonasSchmidinger/LimeSoDa/"
   chemsprops.LimeSoDa$citation_url = "https://doi.org/10.1016/j.geoderma.2025.117337"
   chemsprops.LimeSoDa$confidence_degree = 6
+  chemsprops.LimeSoDa = complete.vars(chemsprops.LimeSoDa, sel = c("oc", "Clay_target"), coords = c("x","y"))
   saveRDS.gz(chemsprops.LimeSoDa, paste0(drv, "INT/LimeSoda/chemsprops.LimeSoDa.rds"))
 }
 dim(chemsprops.LimeSoDa)
 ## [1] 1788   39
 ```
+
+```{r LimeSoDa-points, echo=FALSE, fig.cap="Geographical distribution of points (farms) in the LimeSoDa data set.", out.width="100%"}
+knitr::include_graphics("img/limesoda_map_sites.png")
+```
+
+#### Global soil compressive properties database (SoilCompDB v1)
+
+- Chagas Torres, L., Holzknecht, A., Nemes, A., & Keller, T. (2023). SoilCompDB: Global soil compressive properties database. Version 1.0 (1.0) [Data set]. Soil compressive behavior: a global assessment of research outputs, Vienna, Austria. Zenodo <https://doi.org/10.5281/zenodo.10060810>
+
+```{r}
+if(!exists("chemsprops.SoilCompDB")){
+  scpdb.xy = vroom::vroom(paste0(drv, "INT/SoilCompDB_v1/scpdb_v1.csv"), .name_repair = ~ janitor::make_clean_names(.x))
+  #summary(scpdb.xy$soc)
+  #summary(as.factor(scpdb.xy$year))
+  ## most of data from 2003 to 2021
+  scpdb.xy$labsampnum = paste0("scpdb_v1.", scpdb.xy$sample_id)
+  ## extract coordinates from messy text
+  scpdb.xy <- scpdb.xy |>
+  mutate(
+    # Split into lat/lon strings
+    lat_str   = str_extract(coordinates, "^[^NS]*[NS]"),
+    lon_str   = str_extract(coordinates, "[^NS]*[EW]$"),
+    latitude  = suppressWarnings(parse_lat(lat_str)),
+    longitude = suppressWarnings(parse_lon(lon_str))
+  ) |>
+  select(-lat_str, -lon_str)
+  #summary(scpdb.xy$latitude)
+  ## many missing coordinates unfortunately
+  # library(leaflet)
+  # leaflet(scpdb.xy) |>
+  #   addTiles() |>
+  #   addCircleMarkers(
+  #     lng   = ~longitude,
+  #     lat   = ~latitude,
+  #     label = ~as.character(labsampnum),
+  #     radius = 8,
+  #     color  = "tomato"
+  #   )
+  #summary(scpdb.xy$initial_bulk_density)
+  scpdb.xy$oc_d = signif(scpdb.xy$soc * scpdb.xy$initial_bulk_density, 3)
+  #summary(scpdb.xy$oc_d)
+  scpdb.h.n = c("site_key", "upedonid", "site_obsdate", "longitude", "latitude", "soil_classification_original_in_paper",  
+               "labsampnum", "layer_key", "layer_sequence", "soil_depth_from","soil_depth_to", 
+              "hzn_desgn", "texture_classification_usda", "texture_lab", "clay_usda", "silt_usda", 
+              "sand_usda", "soc", "oc_d", "total_carbon_ncs", "total_nitrogen_ncs", 
+              "ph_kcl", "pH_target", "ph_cacl2", 
+              "sum_of_cations_cec_pH_8_2", "cec_nh4_ph_7", "ecec_base_plus_aluminum", 
+              "total_frag_wt_pct_gt_2_mm_ws", "initial_bulk_density", "ca_ext", "mg_ext", 
+              "na_ext", "k_ext", "ec_water_extractable", "ec_predict_one_to_two")
+  x.na = scpdb.h.n[which(!scpdb.h.n %in% names(scpdb.xy))]
+  if(length(x.na)>0){ for(i in x.na){ scpdb.xy[,i] = NA } }
+  chemsprops.SoilCompDB = scpdb.xy[,scpdb.h.n]
+  chemsprops.SoilCompDB$source_db = "SoilCompDB_2025"
+  chemsprops.SoilCompDB$project_url = "https://www.slu.se/soil"
+  chemsprops.SoilCompDB$citation_url = "https://doi.org/10.5281/zenodo.10060810"
+  chemsprops.SoilCompDB$confidence_degree = 5
+  chemsprops.SoilCompDB = complete.vars(chemsprops.SoilCompDB, sel = c("soc", "clay_usda"), coords = c("longitude","latitude"))
+  saveRDS.gz(chemsprops.SoilCompDB, paste0(drv, "INT/SoilCompDB_v1/chemsprops.SoilCompDB.rds"))
+}
+dim(chemsprops.SoilCompDB)
+## [1] 3051   39
+```
+
+```{r SCPDB-points, echo=FALSE, fig.cap="Geographical distribution of points in SCPDB v1.", out.width="80%"}
+knitr::include_graphics("img/scpdb.xy.png")
+```
+
+#### Reunion (France) soil monitoring
+
+- Collinet, M., Soulié, JC. & Feder, F. A seventeen-year soil analysis dataset for ecosystem management. Sci Data (2026). <https://doi.org/10.1038/s41597-026-07254-8>; data download: <https://doi.org/10.18167/DVN1/EAVAGM>
+
+Note: "For anonymisation purposes, the location of each sample was blurred by randomly moving it within a radius of 1 km of its real position". 
+
+
+```{r}
+if(!exists("chemsprops.Reunion")){
+  reu.xy = vroom::vroom(paste0(drv, "France/Réunion/soil_run.csv"), .name_repair = ~ janitor::make_clean_names(.x))
+  ## Rows: 24858 Columns: 29
+  #summary(as.factor(reu.xy$soil))
+  cor.reu = data.frame(SSL_classification_name=c("Andic Dystrudept", NA, NA,"Fluventic Udepts / Fluventic Dystrudept", 
+                                                 "Typic Endoaquand", NA, "Typic Rhodudult", 
+                                                 "Lithic Udorthent", "Vertic Eutrudept", "Typic Udivitrand"),
+                       soil=c("Andic Cambisols", "Andosols", "Cambisols", 
+                              "Fluvisols and Fluvic Cambisols", "Hydric Andosols",
+                              "Leptosols and Regosols", "Nitisols", "Rock outcrops",
+                              "Vertisols and Vertic Cambisols", "Vitric Andosols"))
+  reu.xy$SSL_classification_name = plyr::join(reu.xy, cor.reu)$SSL_classification_name
+  coords.reu = as.data.frame(geom(terra::project(terra::vect(reu.xy[,c("longitude","latitude")], geom=c("longitude","latitude"), crs="EPSG:32740"), "EPSG:4326"))[,c("x","y")])
+  reu.xy$longitude_decimal_degrees = coords.reu$x
+  reu.xy$latitude_decimal_degrees = coords.reu$y
+  reu.xy$organic_carbon = as.numeric(reu.xy$c_org) * 10
+  reu.xy$total_nitrogen_ncs = as.numeric(reu.xy$n_tot) * 10
+  reu.xy$ca_ext = as.numeric(reu.xy$ca_ex) * 200
+  reu.xy$mg_ext = as.numeric(reu.xy$mg_ex) * 121
+  reu.xy$na_ext = as.numeric(reu.xy$na_ex) * 230
+  reu.xy$k_ext = as.numeric(reu.xy$k_ex) * 391
+  reu.xy$cec_nh4_ph_7 = as.numeric(reu.xy$cec)
+  reu.xy$ph_h2o = as.numeric(reu.xy$p_h_h2o)
+  reu.xy$ph_kcl = as.numeric(reu.xy$p_h_k_cl)
+  reu.xy$hzn_top = 0
+  reu.xy$hzn_bot = 30
+  # reu.xy <- reu.xy |>
+  #   mutate(
+  #     bd_rdm_weighted = ptf_rdm_weighted(as.numeric(residual_dry_matter)),
+  #     bd_combined     = ptf_combined(as.numeric(c_org), as.numeric(residual_dry_matter))
+  #   )
+  # reu.xy$bulk_density_oven_dry = reu.xy$bd_combined
+  reu.xy$site_key = reu.xy$id
+  reu.xy$layer_sequence = 1
+  reu.xy$site_obsdate = format(as.Date(reu.xy$date, format="%d/%m/%Y"), "%Y-%m-%d")
+  #summary(as.factor(reu.xy$site_obsdate))
+  x.na = col.names[which(!col.names %in% names(reu.xy))]
+  if(length(x.na)>0){ for(i in x.na){ reu.xy[,i] = NA } }
+  chemsprops.Reunion = reu.xy[,col.names]
+  chemsprops.Reunion$source_db = "Reunion_SoilAgroDB"
+  chemsprops.Reunion$project_url = "https://ur-recyclage-risque.cirad.fr/"
+  chemsprops.Reunion$citation_url = "https://doi.org/10.18167/GEODE/8429"
+  chemsprops.Reunion$confidence_degree = 4
+  chemsprops.Reunion = complete.vars(chemsprops.Reunion, sel = c("organic_carbon", "ph_kcl"))
+  saveRDS.gz(chemsprops.Reunion, paste0(drv, "France/Réunion/chemsprops.Reunion.rds"))
+}
+dim(chemsprops.Reunion)
+## 23660    39
+```
+
 
 #### GLANCE pseudo-samples
 
@@ -2821,7 +3054,7 @@ Other potential large soil profile DBs of interest:
 
 ```{r}
 ds.n = ls(pattern=glob2rx("chemsprops.*"))
-## 56 data sets
+## 60 data sets
 nm.l = lapply(ds.n, function(i){ names(get(i)) })
 #x = lapply(nm.l, length)
 nm.df = data.frame(do.call(rbind, nm.l))
@@ -2877,7 +3110,7 @@ tot_sprops$hzn_depth = ifelse(tot_sprops$hzn_depth<0, 10, ifelse(tot_sprops$hzn_
 #hist(tot_sprops$hzn_depth, breaks=45)
 ```
 
-Summary number of points per data source:
+Summary number of rows per data source:
 
 ```{r}
 summary(as.factor(tot_sprops$source_db))
@@ -2895,11 +3128,11 @@ Add unique location based on the [Open Location Code](https://cran.r-project.org
 ## https://en.wikipedia.org/wiki/Open_Location_Code
 tot_sprops$olc_id = olctools::encode_olc(tot_sprops$latitude_decimal_degrees, tot_sprops$longitude_decimal_degrees, 11)
 length(levels(as.factor(tot_sprops$olc_id)))
-## 371544
+## 397355
 ## degraded location code
 tot_sprops$olc_block = olctools::encode_olc(tot_sprops$latitude_decimal_degrees, tot_sprops$longitude_decimal_degrees, 6)
-#length(levels(as.factor(tot_sprops$olc_block)))
-## 169495
+length(levels(as.factor(tot_sprops$olc_block)))
+## 177518
 ```
 
 ```{r}
@@ -2917,7 +3150,7 @@ g1.c = summary(as.factor(ov.g1$ID), maxsum = length(levels(as.factor(ov.g1$ID)))
 g1.df = data.frame(count=g1.c, ID=attr(g1.c, "names"))
 g1$count = dplyr::left_join(data.frame(ID=g1$ID), g1.df)$count 
 #plot(g1["count"])
-#writeVector(g1["count"], "/data/dev/tiles_GH_100km_pnt.dens.gpkg", overwrite=TRUE)
+writeVector(g1["count"], "/data/dev/tiles_GH_100km_pnt.dens.gpkg", overwrite=TRUE)
 ```
 
 ```{r IGH-density, echo=FALSE, fig.cap="Density of points based on 100 by 100 km blocks in IGH projection.", out.width="100%"}
@@ -2937,7 +3170,7 @@ mask = terra::rast("/data/CCI_LandCover/land.cover_copernicus_c_100m_s_20150101_
 #}
 ## final number of unique spatial locations:
 nrow(tot_sprops.pnts)
-## 371544
+## 397355
 ```
 
 #### Histogram plots
@@ -2987,6 +3220,8 @@ openair::scatterPlot(tot_sprops[tot_sprops$source_db %in% sel.db0,], x = "organi
                      col = "increment", type = "source_db", log.x=TRUE, log.y=TRUE, 
                      xlab="SOC [g/kg]", ylab="N total [g/kg]")
 ```
+
+Log-Total N and log-SOC lineary correlated. 
 
 ```{r}
 ggplot(tot_sprops, aes(x=source_db, y=ph_h2o)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -3050,7 +3285,7 @@ ggplot(sprops_yrs, aes(x=source_db, y=year)) + geom_boxplot() + theme(axis.text.
 ```
 
 ```{r}
-openair::scatterPlot(sprops_yrs[sprops_yrs$source_db %in% c(sel.db0, "Canada_NPDB", "SoDaH"),], y = "organic_carbon", x = "year", method = "hexbin",  
+openair::scatterPlot(sprops_yrs[sprops_yrs$source_db %in% c(sel.db0, "Canada_NPDB", "SoDaH", "SISLAC"),], y = "organic_carbon", x = "year", method = "hexbin",  
                      col = "increment", type = "source_db", log.y=TRUE, ylab="SOC [g/kg]", xlab="Sampling year")
 ```
 
@@ -3097,9 +3332,10 @@ Write all soil profiles using a wide format:
 ```{r, eval=FALSE}
 sel.rm.pnts  <- tot_sprops_w.pnts$source_db=="LUCAS_2009" | tot_sprops_w.pnts$source_db=="LUCAS_2015" | tot_sprops_w.pnts$source_db=="LUCAS_2018" | tot_sprops_w.pnts$site_key %in% mng.rm ## | tot_sprops_w.pnts$site_key %in% rem.sp
 out.gpkg = paste0(drv, "sol_chem.pnts_horizons.gpkg")
-#unlink(out.gpkg)
+unlink(out.gpkg)
 if(!file.exists(out.gpkg)){
   sf::st_write(st_as_sf(tot_sprops_w.pnts), out.gpkg, "sol_chem.pnts_horizons", driver="GPKG", append=FALSE)
+  unlink("./out/gpkg/sol_chem.pnts_horizons.gpkg")
   sf::st_write(st_as_sf(tot_sprops_w.pnts[!sel.rm.pnts,]), "./out/gpkg/sol_chem.pnts_horizons.gpkg", "sol_chem.pnts_horizons", driver="GPKG")
 }
 ```
